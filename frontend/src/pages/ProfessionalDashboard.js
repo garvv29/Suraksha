@@ -17,6 +17,7 @@ const ProfessionalDashboard = ({ user }) => {
     name: '',
     mobile_number: '',
     department: '',
+    designation: '',
     location: '',
     training_date: '',
     cpr_training: false,
@@ -66,6 +67,7 @@ const ProfessionalDashboard = ({ user }) => {
       name: trainee.name,
       mobile_number: trainee.mobile_number,
       department: trainee.department,
+      designation: trainee.designation || '',
       location: trainee.location,
       training_date: trainee.training_date,
       cpr_training: trainee.cpr_training === 1,
@@ -110,6 +112,7 @@ const ProfessionalDashboard = ({ user }) => {
       name: '',
       mobile_number: '',
       department: '',
+      designation: '',
       location: '',
       training_date: '',
       cpr_training: false,
@@ -129,6 +132,18 @@ const ProfessionalDashboard = ({ user }) => {
     setError('');
     setSuccess('');
   };
+
+  // --- Card view state and filter logic ---
+  const [search, setSearch] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [detailTrainee, setDetailTrainee] = useState(null);
+  const filteredTrainees = trainees.filter(function(t) {
+    var name = t.name || '';
+    var mobile = t.mobile_number || '';
+    var matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || mobile.includes(search);
+    var matchesDept = !filterDept || t.department === filterDept;
+    return matchesSearch && matchesDept;
+  });
 
   if (loading) {
     return (
@@ -190,94 +205,95 @@ const ProfessionalDashboard = ({ user }) => {
       <div className="dashboard-grid">
         <div className="stat-card">
           <div className="stat-number">👥 {trainees.length}</div>
-          <div className="stat-label">My Trainees</div>
+          <div className="stat-label">मेरे प्रशिक्षु</div>
         </div>
         <div className="stat-card">
           <div className="stat-number">🫀 {trainees.filter(t => t.cpr_training === 1).length}</div>
-          <div className="stat-label">CPR Trained</div>
+          <div className="stat-label">सीपीआर प्रशिक्षित</div>
         </div>
         <div className="stat-card">
           <div className="stat-number">🩹 {trainees.filter(t => t.first_aid_kit_given === 1).length}</div>
-          <div className="stat-label">First Aid Kits Given</div>
+          <div className="stat-label">फर्स्ट एड किट दिए गए</div>
         </div>
         <div className="stat-card">
           <div className="stat-number">⚕️ {trainees.filter(t => t.life_saving_skills === 1).length}</div>
-          <div className="stat-label">Life Saving Skills</div>
+          <div className="stat-label">जीवन रक्षक कौशल</div>
         </div>
       </div>
 
-      {/* Trainees Management */}
+      {/* Trainees Management - Card View with Search/Filter */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 className="card-title">👥 My Trainees</h2>
-          <button
-            className="btn btn-success"
-            onClick={() => setShowAddTrainee(true)}
-          >
-            ➕ Register New Trainee
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <h2 className="card-title">👥 मेरे प्रशिक्षु</h2>
+          <button className="btn btn-success" onClick={() => setShowAddTrainee(true)}>
+            ➕ नया प्रशिक्षु पंजीकृत करें
           </button>
         </div>
-
-        {trainees.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '60px 40px', 
-            background: 'rgba(102, 126, 234, 0.05)',
-            borderRadius: '15px',
-            border: '2px dashed rgba(102, 126, 234, 0.2)'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>👥</div>
-            <h3 style={{ color: '#667eea', marginBottom: '10px' }}>No trainees registered yet</h3>
-            <p style={{ color: '#666', fontSize: '1.1rem' }}>Click "Register New Trainee" to get started with your first registration.</p>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="नाम या मोबाइल से खोजें..."
+            value={search || ''}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+          />
+          <select
+            value={filterDept || ''}
+            onChange={e => setFilterDept(e.target.value)}
+            style={{ minWidth: 140, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+          >
+            <option value="">सभी विभाग</option>
+            {[...new Set(trainees.map(t => t.department).filter(Boolean))].map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ marginBottom: 10, color: '#764ba2', fontWeight: 600 }}>
+          कुल परिणाम: {filteredTrainees.length}
+        </div>
+        {filteredTrainees.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#888' }}>
+            कोई प्रशिक्षु नहीं मिला।
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>👤 Trainee Name</th>
-                  <th>📱 Mobile Number</th>
-                  <th>🏢 Department</th>
-                  <th>📍 Location</th>
-                  <th>📅 Training Date</th>
-                  <th>🫀 CPR Training</th>
-                  <th>🩹 First Aid Kit</th>
-                  <th>⚕️ Life Saving Skills</th>
-                  <th>⚙️ Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trainees.map((trainee) => (
-                  <tr key={trainee.id}>
-                    <td>{trainee.name}</td>
-                    <td>{trainee.mobile_number}</td>
-                    <td>{trainee.department}</td>
-                    <td>{trainee.location}</td>
-                    <td>{trainee.training_date}</td>
-                    <td>{trainee.cpr_training ? '✅ Yes' : '❌ No'}</td>
-                    <td>{trainee.first_aid_kit_given ? '✅ Yes' : '❌ No'}</td>
-                    <td>{trainee.life_saving_skills ? '✅ Yes' : '❌ No'}</td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn btn-primary btn-small"
-                        onClick={() => handleEditTrainee(trainee)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-danger btn-small"
-                        onClick={() => handleDeleteTrainee(trainee.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
+            {filteredTrainees.map(trainee => (
+              <div key={trainee.id} className="trainee-card" style={{ background: '#f8faff', borderRadius: 14, boxShadow: '0 2px 10px #e0e7ff55', padding: 18, cursor: 'pointer', border: '1.5px solid #e0e7ff', transition: 'box-shadow 0.2s' }} onClick={() => setDetailTrainee(trainee)}>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#4b2997', marginBottom: 6 }}>{trainee.name}</div>
+                <div style={{ color: '#555', fontSize: '0.98rem', marginBottom: 2 }}>डिपार्टमेंट: <b>{trainee.department || 'N/A'}</b></div>
+                {trainee.designation && <div style={{ color: '#555', fontSize: '0.98rem' }}>पद: <b>{trainee.designation}</b></div>}
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Trainee Detail Modal */}
+      {detailTrainee && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">{detailTrainee.name} - विवरण</h3>
+              <button className="close-btn" onClick={() => setDetailTrainee(null)}>×</button>
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <div><b>नाम:</b> {detailTrainee.name}</div>
+              <div><b>मोबाइल:</b> {detailTrainee.mobile_number}</div>
+              <div><b>डिपार्टमेंट:</b> {detailTrainee.department}</div>
+              <div><b>पद:</b> {detailTrainee.designation || 'N/A'}</div>
+              <div><b>स्थान:</b> {detailTrainee.location}</div>
+              <div><b>प्रशिक्षण तिथि:</b> {detailTrainee.training_date}</div>
+              <div><b>सीपीआर प्रशिक्षण:</b> {detailTrainee.cpr_training ? 'हाँ' : 'नहीं'}</div>
+              <div><b>फर्स्ट एड किट:</b> {detailTrainee.first_aid_kit_given ? 'हाँ' : 'नहीं'}</div>
+              <div><b>जीवन रक्षक कौशल:</b> {detailTrainee.life_saving_skills ? 'हाँ' : 'नहीं'}</div>
+            </div>
+            <div className="action-buttons">
+              <button className="btn btn-primary" onClick={() => { setShowEditTrainee(true); setEditingTrainee(detailTrainee); setDetailTrainee(null); }}>संपादित करें</button>
+              <button className="btn btn-danger" onClick={() => { handleDeleteTrainee(detailTrainee.id); setDetailTrainee(null); }}>हटाएँ</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Trainee Modal */}
       {showAddTrainee && (
@@ -328,7 +344,20 @@ const ProfessionalDashboard = ({ user }) => {
                     department: e.target.value
                   })}
                   required
-                  placeholder="e.g., Emergency, Cardiology, ICU, Surgery"
+                  placeholder=""
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Designation</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={traineeForm.designation}
+                  onChange={(e) => setTraineeForm({
+                    ...traineeForm,
+                    designation: e.target.value
+                  })}
+                  placeholder="e.g., Nurse, Ward Boy, etc."
                 />
               </div>
               
@@ -466,7 +495,20 @@ const ProfessionalDashboard = ({ user }) => {
                     department: e.target.value
                   })}
                   required
-                  placeholder="e.g., Emergency, Cardiology, ICU, Surgery"
+                  placeholder=""
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Designation</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={traineeForm.designation}
+                  onChange={(e) => setTraineeForm({
+                    ...traineeForm,
+                    designation: e.target.value
+                  })}
+                  placeholder="e.g., Nurse, Ward Boy, etc."
                 />
               </div>
               

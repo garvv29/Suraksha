@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { professionalAPI, traineeAPI } from '../api';
 
@@ -9,12 +10,21 @@ const AdminDashboard = ({ user }) => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   
-  // Modal states
+
+  // Modal/detail states
   const [showAddProfessional, setShowAddProfessional] = useState(false);
   const [showEditTrainee, setShowEditTrainee] = useState(false);
   const [showEditProfessional, setShowEditProfessional] = useState(false);
   const [editingTrainee, setEditingTrainee] = useState(null);
   const [editingProfessional, setEditingProfessional] = useState(null);
+  const [detailTrainee, setDetailTrainee] = useState(null);
+  const [detailProfessional, setDetailProfessional] = useState(null);
+
+  // Search/filter states
+  const [searchTrainee, setSearchTrainee] = useState('');
+  const [filterTraineeDept, setFilterTraineeDept] = useState('');
+  const [searchProfessional, setSearchProfessional] = useState('');
+  const [filterProfessionalDept, setFilterProfessionalDept] = useState('');
 
   // Form data
   const [professionalForm, setProfessionalForm] = useState({
@@ -31,6 +41,7 @@ const AdminDashboard = ({ user }) => {
     name: '',
     mobile_number: '',
     department: '',
+    designation: '',
     location: '',
     training_date: '',
     cpr_training: false,
@@ -92,11 +103,12 @@ const AdminDashboard = ({ user }) => {
       name: trainee.name,
       mobile_number: trainee.mobile_number,
       department: trainee.department,
+      designation: trainee.designation || '',
       location: trainee.location,
       training_date: trainee.training_date,
-      cpr_training: trainee.cpr_training === 1,
-      first_aid_kit_given: trainee.first_aid_kit_given === 1,
-      life_saving_skills: trainee.life_saving_skills === 1,
+      cpr_training: trainee.cpr_training === 1 || trainee.cpr_training === true,
+      first_aid_kit_given: trainee.first_aid_kit_given === 1 || trainee.first_aid_kit_given === true,
+      life_saving_skills: trainee.life_saving_skills === 1 || trainee.life_saving_skills === true,
     });
     setShowEditTrainee(true);
   };
@@ -213,6 +225,7 @@ const AdminDashboard = ({ user }) => {
     );
   }
 
+
   return (
     <div className="container">
       {error && (
@@ -221,7 +234,6 @@ const AdminDashboard = ({ user }) => {
           <button onClick={clearMessages} style={{ float: 'right', background: 'none', border: 'none' }}>×</button>
         </div>
       )}
-      
       {success && (
         <div className="alert alert-success fade-in">
           {success}
@@ -233,15 +245,15 @@ const AdminDashboard = ({ user }) => {
       <div className="dashboard-grid">
         <div className="stat-card">
           <div className="stat-number">👨‍⚕️ {professionals.length}</div>
-          <div className="stat-label">Medical Professionals</div>
+          <div className="stat-label">मेडिकल प्रोफेशनल्स</div>
         </div>
         <div className="stat-card">
           <div className="stat-number">🎓 {trainees.length}</div>
-          <div className="stat-label">Total Trainees</div>
+          <div className="stat-label">कुल प्रशिक्षु</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">🫀 {trainees.filter(t => t.cpr_training === 1).length}</div>
-          <div className="stat-label">CPR Trained</div>
+          <div className="stat-number">🫀 {trainees.filter(t => t.cpr_training === 1 || t.cpr_training === true).length}</div>
+          <div className="stat-label">सीपीआर प्रशिक्षित</div>
         </div>
       </div>
 
@@ -268,142 +280,266 @@ const AdminDashboard = ({ user }) => {
           </button>
         </div>
 
-        {/* Medical Professionals Tab */}
+        {/* Medical Professionals Tab - Card View */}
         {activeTab === 'professionals' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 className="card-title">👨‍⚕️ Medical Professionals</h2>
-              <button
-                className="btn btn-success"
-                onClick={() => setShowAddProfessional(true)}
-              >
-                ➕ Add New Professional
+              <button className="btn btn-success" onClick={() => setShowAddProfessional(true)}>
+                ➕ नया प्रोफेशनल जोड़ें
               </button>
             </div>
-
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>👤 ID</th>
-                    <th>👨‍⚕️ Doctor Name</th>
-                    <th>🔑 Username</th>
-                    <th>📱 Mobile Number</th>
-                    <th>🏷️ Designation</th>
-                    <th>🏢 Department</th>
-                    <th>📅 Joined Date</th>
-                    <th>⚙️ Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {professionals.map((prof) => (
-                    <tr key={prof.id}>
-                      <td>{prof.id}</td>
-                      <td>{prof.name}</td>
-                      <td>{prof.username}</td>
-                      <td>{prof.mobile_number}</td>
-                      <td>{prof.designation || 'N/A'}</td>
-                      <td>{prof.department || 'N/A'}</td>
-                      <td>{new Date(prof.created_at).toLocaleDateString()}</td>
-                      <td className="actions-cell">
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <button
-                            className="btn btn-primary btn-small"
-                            onClick={() => {
-                              console.log('Edit clicked for:', prof);
-                              handleEditProfessional(prof);
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-danger btn-small"
-                            onClick={() => {
-                              console.log('Delete clicked for:', prof.id);
-                              handleDeleteProfessional(prof.id);
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="नाम, यूज़रनेम, मोबाइल, पद, विभाग खोजें..."
+                value={searchProfessional}
+                onChange={e => setSearchProfessional(e.target.value)}
+                style={{ minWidth: 180, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+              />
+              <select
+                value={filterProfessionalDept || ''}
+                onChange={e => setFilterProfessionalDept(e.target.value)}
+                style={{ minWidth: 140, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+              >
+                <option value="">सभी विभाग</option>
+                {[...new Set(professionals.map(p => p.department).filter(Boolean))].map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
             </div>
+            <div style={{ marginBottom: 10, color: '#764ba2', fontWeight: 600 }}>
+              कुल परिणाम: {
+                professionals.filter(p => {
+                  const q = searchProfessional.toLowerCase();
+                  return (
+                    (!filterProfessionalDept || p.department === filterProfessionalDept) &&
+                    (
+                      p.name?.toLowerCase().includes(q) ||
+                      p.username?.toLowerCase().includes(q) ||
+                      p.mobile_number?.toLowerCase().includes(q) ||
+                      (p.designation || '').toLowerCase().includes(q) ||
+                      (p.department || '').toLowerCase().includes(q)
+                    )
+                  );
+                }).length
+              }
+            </div>
+            {professionals.filter(p => {
+              const q = searchProfessional.toLowerCase();
+              return (
+                (!filterProfessionalDept || p.department === filterProfessionalDept) &&
+                (
+                  p.name?.toLowerCase().includes(q) ||
+                  p.username?.toLowerCase().includes(q) ||
+                  p.mobile_number?.toLowerCase().includes(q) ||
+                  (p.designation || '').toLowerCase().includes(q) ||
+                  (p.department || '').toLowerCase().includes(q)
+                )
+              );
+            }).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#888' }}>
+                कोई प्रोफेशनल नहीं मिला।
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
+                {professionals.filter(p => {
+                  const q = searchProfessional.toLowerCase();
+                  return (
+                    (!filterProfessionalDept || p.department === filterProfessionalDept) &&
+                    (
+                      p.name?.toLowerCase().includes(q) ||
+                      p.username?.toLowerCase().includes(q) ||
+                      p.mobile_number?.toLowerCase().includes(q) ||
+                      (p.designation || '').toLowerCase().includes(q) ||
+                      (p.department || '').toLowerCase().includes(q)
+                    )
+                  );
+                }).map(prof => (
+                  <div key={prof.id} className="trainee-card" style={{ background: '#f8faff', borderRadius: 14, boxShadow: '0 2px 10px #e0e7ff55', padding: 18, cursor: 'pointer', border: '1.5px solid #e0e7ff', transition: 'box-shadow 0.2s' }} onClick={() => setDetailProfessional(prof)}>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#4b2997', marginBottom: 6 }}>{prof.name}</div>
+                    <div style={{ color: '#555', fontSize: '0.98rem', marginBottom: 2 }}>पद: <b>{prof.designation || 'N/A'}</b></div>
+                    <div style={{ color: '#555', fontSize: '0.98rem' }}>विभाग: <b>{prof.department || 'N/A'}</b></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Professional Detail Modal */}
+            {detailProfessional && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3 className="modal-title">{detailProfessional.name} - विवरण</h3>
+                    <button className="close-btn" onClick={() => setDetailProfessional(null)}>×</button>
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <div><b>नाम:</b> {detailProfessional.name}</div>
+                    <div><b>यूज़रनेम:</b> {detailProfessional.username}</div>
+                    <div><b>मोबाइल:</b> {detailProfessional.mobile_number}</div>
+                    <div><b>पद:</b> {detailProfessional.designation || 'N/A'}</div>
+                    <div><b>विभाग:</b> {detailProfessional.department || 'N/A'}</div>
+                    <div><b>स्पेशलाइजेशन:</b> {detailProfessional.specialization || 'N/A'}</div>
+                    <div><b>अनुभव (वर्ष):</b> {detailProfessional.experience_years || 'N/A'}</div>
+                    <div><b>जुड़ने की तारीख:</b> {detailProfessional.created_at ? new Date(detailProfessional.created_at).toLocaleDateString() : 'N/A'}</div>
+                  </div>
+                  <div className="action-buttons">
+                    <button className="btn btn-primary" onClick={() => { setShowEditProfessional(true); setEditingProfessional(detailProfessional); setDetailProfessional(null); }}>संपादित करें</button>
+                    <button className="btn btn-danger" onClick={() => { handleDeleteProfessional(detailProfessional.id); setDetailProfessional(null); }}>हटाएँ</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* All Trainees Tab */}
+        {/* All Trainees Tab - Card View */}
         {activeTab === 'trainees' && (
           <div>
-            <h2 className="card-title">🎓 All Trainees</h2>
-            <div className="table-container">
-              <table className="table trainees-table">
-                <thead>
-                  <tr>
-                    <th>👤 Trainee Name</th>
-                    <th>📱 Mobile Number</th>
-                    <th>🏢 Department</th>
-                    <th>📍 Location</th>
-                    <th>📅 Training Date</th>
-                    <th>🫀 CPR Training</th>
-                    <th>🩹 First Aid Kit</th>
-                    <th>⚕️ Life Saving Skills</th>
-                    <th>👨‍⚕️ Registered By</th>
-                    <th>⚙️ Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trainees.map((trainee) => (
-                    <tr key={trainee.id}>
-                      <td>{trainee.name}</td>
-                      <td>{trainee.mobile_number}</td>
-                      <td>{trainee.department}</td>
-                      <td>{trainee.location}</td>
-                      <td>{trainee.training_date}</td>
-                      <td>{trainee.cpr_training ? '✅' : '❌'}</td>
-                      <td>{trainee.first_aid_kit_given ? '✅' : '❌'}</td>
-                      <td>{trainee.life_saving_skills ? '✅' : '❌'}</td>
-                      <td>{trainee.registered_by_name}</td>
-                      <td className="actions-cell">
-                        <button
-                          className="btn btn-primary btn-small"
-                          onClick={() => handleEditTrainee(trainee)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-danger btn-small"
-                          onClick={() => handleDeleteTrainee(trainee.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h2 className="card-title">🎓 सभी प्रशिक्षु</h2>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="नाम, मोबाइल, पद, विभाग, स्थान खोजें..."
+                value={searchTrainee}
+                onChange={e => setSearchTrainee(e.target.value)}
+                style={{ minWidth: 180, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+              />
+              <select
+                value={filterTraineeDept || ''}
+                onChange={e => setFilterTraineeDept(e.target.value)}
+                style={{ minWidth: 140, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
+              >
+                <option value="">सभी विभाग</option>
+                {[...new Set(trainees.map(t => t.department).filter(Boolean))].map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
             </div>
+            <div style={{ marginBottom: 10, color: '#764ba2', fontWeight: 600 }}>
+              कुल परिणाम: {
+                trainees.filter(t => {
+                  const q = searchTrainee.toLowerCase();
+                  return (
+                    (!filterTraineeDept || t.department === filterTraineeDept) &&
+                    (
+                      t.name?.toLowerCase().includes(q) ||
+                      t.mobile_number?.toLowerCase().includes(q) ||
+                      (t.designation || '').toLowerCase().includes(q) ||
+                      (t.department || '').toLowerCase().includes(q) ||
+                      (t.location || '').toLowerCase().includes(q)
+                    )
+                  );
+                }).length
+              }
+            </div>
+            {trainees.filter(t => {
+              const q = searchTrainee.toLowerCase();
+              return (
+                (!filterTraineeDept || t.department === filterTraineeDept) &&
+                (
+                  t.name?.toLowerCase().includes(q) ||
+                  t.mobile_number?.toLowerCase().includes(q) ||
+                  (t.designation || '').toLowerCase().includes(q) ||
+                  (t.department || '').toLowerCase().includes(q) ||
+                  (t.location || '').toLowerCase().includes(q)
+                )
+              );
+            }).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#888' }}>
+                कोई प्रशिक्षु नहीं मिला।
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
+                {trainees.filter(t => {
+                  const q = searchTrainee.toLowerCase();
+                  return (
+                    (!filterTraineeDept || t.department === filterTraineeDept) &&
+                    (
+                      t.name?.toLowerCase().includes(q) ||
+                      t.mobile_number?.toLowerCase().includes(q) ||
+                      (t.designation || '').toLowerCase().includes(q) ||
+                      (t.department || '').toLowerCase().includes(q) ||
+                      (t.location || '').toLowerCase().includes(q)
+                    )
+                  );
+                }).map(trainee => (
+                  <div key={trainee.id} className="trainee-card" style={{ background: '#f8faff', borderRadius: 14, boxShadow: '0 2px 10px #e0e7ff55', padding: 18, cursor: 'pointer', border: '1.5px solid #e0e7ff', transition: 'box-shadow 0.2s' }} onClick={() => setDetailTrainee(trainee)}>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#4b2997', marginBottom: 6 }}>{trainee.name}</div>
+                    <div style={{ color: '#555', fontSize: '0.98rem', marginBottom: 2 }}>डिपार्टमेंट: <b>{trainee.department || 'N/A'}</b></div>
+                    {trainee.designation && <div style={{ color: '#555', fontSize: '0.98rem' }}>पद: <b>{trainee.designation}</b></div>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Trainee Detail Modal */}
+            {detailTrainee && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3 className="modal-title">{detailTrainee.name} - विवरण</h3>
+                    <button className="close-btn" onClick={() => setDetailTrainee(null)}>×</button>
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <div><b>नाम:</b> {detailTrainee.name}</div>
+                    <div><b>मोबाइल:</b> {detailTrainee.mobile_number}</div>
+                    <div><b>डिपार्टमेंट:</b> {detailTrainee.department}</div>
+                    <div><b>पद:</b> {detailTrainee.designation || 'N/A'}</div>
+                    <div><b>स्थान:</b> {detailTrainee.location}</div>
+                    <div><b>प्रशिक्षण तिथि:</b> {detailTrainee.training_date}</div>
+                    <div><b>सीपीआर प्रशिक्षण:</b> {detailTrainee.cpr_training ? 'हाँ' : 'नहीं'}</div>
+                    <div><b>फर्स्ट एड किट:</b> {detailTrainee.first_aid_kit_given ? 'हाँ' : 'नहीं'}</div>
+                    <div><b>जीवन रक्षक कौशल:</b> {detailTrainee.life_saving_skills ? 'हाँ' : 'नहीं'}</div>
+                    <div><b>पंजीकृत द्वारा:</b> {detailTrainee.registered_by_name || 'N/A'}</div>
+                  </div>
+                  <div className="action-buttons">
+                    <button className="btn btn-primary" onClick={() => { setShowEditTrainee(true); setEditingTrainee(detailTrainee); setDetailTrainee(null); }}>संपादित करें</button>
+                    <button className="btn btn-danger" onClick={() => { handleDeleteTrainee(detailTrainee.id); setDetailTrainee(null); }}>हटाएँ</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div>
-            <h2 className="card-title">📊 System Overview</h2>
+            <h2 className="card-title">📊 सिस्टम अवलोकन</h2>
             <div style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>
-              <p>🏥 Welcome to the <strong className="gradient-text">Suraksha Medical Training Management System</strong>.</p>
-              <p>💡 Use the tabs above to manage medical professionals and view all trainees in the system.</p>
+              <p>🏥 <strong className="gradient-text">सुरक्षा मेडिकल ट्रेनिंग प्रबंधन प्रणाली</strong> में आपका स्वागत है।</p>
+              <p>💡 ऊपर दिए गए टैब्स का उपयोग करके मेडिकल प्रोफेशनल्स का प्रबंधन करें और सभी प्रशिक्षुओं को देखें।</p>
               <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(102, 126, 234, 0.1)', borderRadius: '15px', border: '1px solid rgba(102, 126, 234, 0.2)' }}>
-                <strong>🎯 Key Features:</strong>
+                <strong>🎯 मुख्य विशेषताएँ:</strong>
                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-                  <li>👥 Comprehensive user management</li>
-                  <li>📋 Training progress tracking</li>
-                  <li>📊 Real-time statistics</li>
-                  <li>🔒 Role-based access control</li>
+                  <li>👥 व्यापक यूज़र प्रबंधन</li>
+                  <li>📋 प्रशिक्षण प्रगति ट्रैकिंग</li>
+                  <li>📊 रीयल-टाइम आँकड़े</li>
+                  <li>🔒 भूमिका आधारित एक्सेस</li>
                 </ul>
+              </div>
+            </div>
+
+            <div className="card" style={{ margin: '32px auto', maxWidth: 700, background: '#f8faff', borderRadius: 18, boxShadow: '0 2px 12px #e0e7ff55', padding: 28 }}>
+              <h2 className="card-title" style={{ marginBottom: 18 }}>सिस्टम अवलोकन</h2>
+              <p style={{ fontSize: '1.08rem', color: '#333', marginBottom: 16 }}>
+                <b>Project SURAKSHA</b> एक वेब पोर्टल है, जिसका उद्देश्य मेडिकल प्रोफेशनल्स (ट्रेनर) द्वारा फ्रंटलाइन वर्कर्स (ट्रेनी) की इमरजेंसी ट्रेनिंग और उनका डेटा सुरक्षित रूप से मैनेज करना है। इसमें दो मुख्य रोल हैं: <b>Admin</b> और <b>Medical Professional</b>。
+              </p>
+              <ul style={{ fontSize: '1.05rem', color: '#444', marginBottom: 16, paddingLeft: 22 }}>
+                <li>मेडिकल प्रोफेशनल्स अपने द्वारा ट्रेन किए गए वर्कर्स को रजिस्टर, एडिट और डिलीट कर सकते हैं।</li>
+                <li>हर यूजर को उसकी भूमिका के अनुसार ही डेटा देखने और बदलने की अनुमति है।</li>
+                <li>सभी डेटा सुरक्षित तरीके से स्टोर और एक्सेस होता है।</li>
+              </ul>
+              <h3 style={{ color: '#4b2997', margin: '18px 0 8px 0', fontWeight: 700 }}>Admin के अधिकार:</h3>
+              <ul style={{ fontSize: '1.05rem', color: '#444', paddingLeft: 22 }}>
+                <li>सभी मेडिकल प्रोफेशनल्स की लिस्ट देख सकते हैं।</li>
+                <li>नए प्रोफेशनल्स जोड़ सकते हैं और किसी भी प्रोफेशनल को डिलीट कर सकते हैं।</li>
+                <li>सभी ट्रेनी (किसी भी प्रोफेशनल द्वारा रजिस्टर किए गए) का डेटा देख सकते हैं।</li>
+                <li>किसी भी ट्रेनी का डेटा एडिट या डिलीट कर सकते हैं।</li>
+                <li>(वैकल्पिक) सभी ट्रेनी का डेटा एक्सपोर्ट कर सकते हैं (CSV/PDF में)।</li>
+                <li>पूरे सिस्टम की निगरानी और कंट्रोल कर सकते हैं।</li>
+              </ul>
+              <div style={{ marginTop: 18, color: '#764ba2', fontWeight: 600 }}>
+                <b>नोट:</b> Admin के पास पूरे सिस्टम का कंट्रोल होता है — वह सभी प्रोफेशनल्स और ट्रेनी का डेटा देख, जोड़, संपादित और डिलीट कर सकता है。
               </div>
             </div>
           </div>

@@ -131,33 +131,34 @@ def register_trainee():
     name = data.get('name')
     mobile_number = data.get('mobile_number')
     department = data.get('department')
+    designation = data.get('designation', '')
     location = data.get('location')
     training_date = data.get('training_date')
     cpr_training = data.get('cpr_training', False)
     first_aid_kit_given = data.get('first_aid_kit_given', False)
     life_saving_skills = data.get('life_saving_skills', False)
     registered_by = data.get('registered_by')
-    
+
     if not all([name, department, location, training_date, registered_by]):
         return jsonify({'error': 'All required fields must be provided'}), 400
-    
+
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
-    
+
     try:
         cursor = connection.cursor()
         insert_query = """
-            INSERT INTO trainees (name, mobile_number, department, location, training_date, 
+            INSERT INTO trainees (name, mobile_number, department, designation, location, training_date, 
                                 cpr_training, first_aid_kit_given, life_saving_skills, registered_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(insert_query, (name, mobile_number, department, location, training_date,
+        cursor.execute(insert_query, (name, mobile_number, department, designation, location, training_date,
                                     cpr_training, first_aid_kit_given, life_saving_skills, registered_by))
         connection.commit()
-        
+
         return jsonify({'success': True, 'message': 'Trainee registered successfully'})
-        
+
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     finally:
@@ -169,14 +170,14 @@ def get_trainees():
     """Get trainees (filtered by user role)"""
     user_id = request.args.get('user_id')
     role = request.args.get('role')
-    
+
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
-    
+
     try:
         cursor = connection.cursor(dictionary=True)
-        
+
         if role == 'admin':
             # Admin sees all trainees
             query = """
@@ -196,18 +197,21 @@ def get_trainees():
                 ORDER BY t.created_at DESC
             """
             cursor.execute(query, (user_id,))
-        
+
         trainees = cursor.fetchall()
-        
+
         # Convert date objects to strings
         for trainee in trainees:
             if trainee['training_date']:
                 trainee['training_date'] = trainee['training_date'].strftime('%Y-%m-%d')
             if trainee['created_at']:
                 trainee['created_at'] = trainee['created_at'].strftime('%Y-%m-%d %H:%M:%S')
-        
+            # Ensure designation is present (for backward compatibility)
+            if 'designation' not in trainee:
+                trainee['designation'] = ''
+
         return jsonify({'success': True, 'trainees': trainees})
-        
+
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     finally:
@@ -220,20 +224,22 @@ def get_professionals():
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
-    
     try:
         cursor = connection.cursor(dictionary=True)
-        query = "SELECT id, name, username, mobile_number, created_at FROM users WHERE role = 'professional' ORDER BY created_at DESC"
+        # Fetch all relevant fields for professionals
+        query = """
+            SELECT id, name, username, mobile_number, designation, department, specialization, experience_years, created_at
+            FROM users
+            WHERE role = 'professional'
+            ORDER BY created_at DESC
+        """
         cursor.execute(query)
         professionals = cursor.fetchall()
-        
         # Convert datetime to string
         for prof in professionals:
             if prof['created_at']:
                 prof['created_at'] = prof['created_at'].strftime('%Y-%m-%d %H:%M:%S')
-        
         return jsonify({'success': True, 'professionals': professionals})
-        
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     finally:
@@ -247,36 +253,37 @@ def edit_trainee(trainee_id):
     name = data.get('name')
     mobile_number = data.get('mobile_number')
     department = data.get('department')
+    designation = data.get('designation', '')
     location = data.get('location')
     training_date = data.get('training_date')
     cpr_training = data.get('cpr_training', False)
     first_aid_kit_given = data.get('first_aid_kit_given', False)
     life_saving_skills = data.get('life_saving_skills', False)
-    
+
     if not all([name, department, location, training_date]):
         return jsonify({'error': 'All required fields must be provided'}), 400
-    
+
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
-    
+
     try:
         cursor = connection.cursor()
         update_query = """
             UPDATE trainees 
-            SET name = %s, mobile_number = %s, department = %s, location = %s, training_date = %s,
+            SET name = %s, mobile_number = %s, department = %s, designation = %s, location = %s, training_date = %s,
                 cpr_training = %s, first_aid_kit_given = %s, life_saving_skills = %s
             WHERE id = %s
         """
-        cursor.execute(update_query, (name, mobile_number, department, location, training_date,
+        cursor.execute(update_query, (name, mobile_number, department, designation, location, training_date,
                                     cpr_training, first_aid_kit_given, life_saving_skills, trainee_id))
         connection.commit()
-        
+
         if cursor.rowcount > 0:
             return jsonify({'success': True, 'message': 'Trainee updated successfully'})
         else:
             return jsonify({'error': 'Trainee not found'}), 404
-        
+
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
     finally:
