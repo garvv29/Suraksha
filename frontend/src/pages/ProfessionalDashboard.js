@@ -1,43 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { traineeAPI } from '../api';
+import { traineeAPI, trainingAPI } from '../api';
+import '../App.css';
 
 const ProfessionalDashboard = ({ user }) => {
   const [trainees, setTrainees] = useState([]);
+  const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [activeTab, setActiveTab] = useState('trainees');
   
   // Modal states
   const [showAddTrainee, setShowAddTrainee] = useState(false);
   const [showEditTrainee, setShowEditTrainee] = useState(false);
   const [editingTrainee, setEditingTrainee] = useState(null);
+  const [detailTrainee, setDetailTrainee] = useState(null);
+
+  // Search/filter states  
+  const [searchTrainee, setSearchTrainee] = useState('');
+  const [filterTraineeDept, setFilterTraineeDept] = useState('');
+  const [filterTraineeBlock, setFilterTraineeBlock] = useState('');
 
   // Form data
   const [traineeForm, setTraineeForm] = useState({
     name: '',
     mobile_number: '',
+    gender: '',
+    age: '',
     department: '',
     designation: '',
-    location: '',
+    address: '',
+    block: '',
     training_date: '',
     cpr_training: false,
     first_aid_kit_given: false,
     life_saving_skills: false,
   });
 
+  const blocks = ['Raipur', 'Birgaon', 'Abhanpur', 'Arang', 'Dhariswa', 'Tilda'];
+  const genderOptions = ['Male', 'Female', 'Other'];
+
   useEffect(() => {
-    fetchTrainees();
+    fetchData();
   }, []);
 
-  const fetchTrainees = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await traineeAPI.getAll(user.id, user.role);
-      if (response.data.success) {
-        setTrainees(response.data.trainees);
+      const [traineesResponse, trainingsResponse] = await Promise.all([
+        traineeAPI.getAll(user.id, user.role),
+        trainingAPI.getAll()
+      ]);
+      
+      if (traineesResponse.data.success) {
+        setTrainees(traineesResponse.data.trainees);
+      }
+      if (trainingsResponse.data.success) {
+        setTrainings(trainingsResponse.data.trainings.filter(t => t.conducted_by === user.id));
       }
     } catch (error) {
-      setError('Failed to fetch trainees');
+      setError('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -52,9 +74,9 @@ const ProfessionalDashboard = ({ user }) => {
       });
       if (response.data.success) {
         setSuccess('Trainee registered successfully!');
-        resetForm();
+        resetTraineeForm();
         setShowAddTrainee(false);
-        fetchTrainees();
+        fetchData();
       }
     } catch (error) {
       setError(error.response?.data?.error || 'Failed to register trainee');
@@ -66,9 +88,12 @@ const ProfessionalDashboard = ({ user }) => {
     setTraineeForm({
       name: trainee.name,
       mobile_number: trainee.mobile_number,
+      gender: trainee.gender || '',
+      age: trainee.age || '',
       department: trainee.department,
       designation: trainee.designation || '',
-      location: trainee.location,
+      address: trainee.address || trainee.location || '',
+      block: trainee.block || '',
       training_date: trainee.training_date,
       cpr_training: trainee.cpr_training === 1,
       first_aid_kit_given: trainee.first_aid_kit_given === 1,
@@ -85,8 +110,8 @@ const ProfessionalDashboard = ({ user }) => {
         setSuccess('Trainee updated successfully!');
         setShowEditTrainee(false);
         setEditingTrainee(null);
-        resetForm();
-        fetchTrainees();
+        resetTraineeForm();
+        fetchData();
       }
     } catch (error) {
       setError(error.response?.data?.error || 'Failed to update trainee');
@@ -99,7 +124,7 @@ const ProfessionalDashboard = ({ user }) => {
         const response = await traineeAPI.delete(traineeId);
         if (response.data.success) {
           setSuccess('Trainee deleted successfully!');
-          fetchTrainees();
+          fetchData();
         }
       } catch (error) {
         setError(error.response?.data?.error || 'Failed to delete trainee');
@@ -107,13 +132,16 @@ const ProfessionalDashboard = ({ user }) => {
     }
   };
 
-  const resetForm = () => {
+  const resetTraineeForm = () => {
     setTraineeForm({
       name: '',
       mobile_number: '',
+      gender: '',
+      age: '',
       department: '',
       designation: '',
-      location: '',
+      address: '',
+      block: '',
       training_date: '',
       cpr_training: false,
       first_aid_kit_given: false,
@@ -125,7 +153,7 @@ const ProfessionalDashboard = ({ user }) => {
     setShowAddTrainee(false);
     setShowEditTrainee(false);
     setEditingTrainee(null);
-    resetForm();
+    resetTraineeForm();
   };
 
   const clearMessages = () => {
@@ -133,163 +161,254 @@ const ProfessionalDashboard = ({ user }) => {
     setSuccess('');
   };
 
-  // --- Card view state and filter logic ---
-  const [search, setSearch] = useState('');
-  const [filterDept, setFilterDept] = useState('');
-  const [detailTrainee, setDetailTrainee] = useState(null);
+  // Filter trainees
   const filteredTrainees = trainees.filter(function(t) {
     var name = t.name || '';
     var mobile = t.mobile_number || '';
-    var matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || mobile.includes(search);
-    var matchesDept = !filterDept || t.department === filterDept;
-    return matchesSearch && matchesDept;
+    var matchesSearch = name.toLowerCase().includes(searchTrainee.toLowerCase()) || mobile.includes(searchTrainee);
+    var matchesDept = !filterTraineeDept || t.department === filterTraineeDept;
+    var matchesBlock = !filterTraineeBlock || t.block === filterTraineeBlock;
+    return matchesSearch && matchesDept && matchesBlock;
   });
 
   if (loading) {
     return (
-      <div className="loading">
+      <div className="loading-container">
         <div className="spinner"></div>
+        <p>Loading dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="container">
-      {/* Professional Profile Header */}
-      <div className="profile-header">
-        <div className="profile-info">
+    <div className="admin-container">
+      <div className="admin-header">
+        <div className="admin-profile">
           <div className="profile-avatar">
-            <span className="avatar-icon">👨‍⚕️</span>
+            <span>{user.name?.charAt(0)?.toUpperCase()}</span>
           </div>
-          <div className="profile-details">
-            <h1 className="profile-name">{user.name}</h1>
-            <div className="profile-meta">
-              {user.designation && (
-                <span className="profile-designation">{user.designation}</span>
-              )}
-              {user.department && (
-                <span className="profile-department">• {user.department}</span>
-              )}
+          <div className="profile-info">
+            <h1>{user.name}</h1>
+            <div className="profile-badges">
+              {user.designation && <span className="profile-badge">{user.designation}</span>}
+              {user.department && <span className="profile-badge">{user.department}</span>}
             </div>
-            {user.specialization && (
-              <p className="profile-specialization">🎯 {user.specialization}</p>
-            )}
-            {user.experience_years && (
-              <p className="profile-experience">📅 {user.experience_years} years of experience</p>
-            )}
           </div>
         </div>
-        <div className="profile-stats">
-          <div className="quick-stat">
-            <span className="stat-value">{trainees.length}</span>
-            <span className="stat-label">Trainees</span>
+        <div className="header-stats">
+          <div className="stat-item">
+            <div className="stat-number">{trainees.length}</div>
+            <div className="stat-label">Total Trainees</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">{trainings.length}</div>
+            <div className="stat-label">Training Sessions</div>
           </div>
         </div>
       </div>
 
+      {/* Alert Messages */}
       {error && (
-        <div className="alert alert-error fade-in">
-          {error}
-          <button onClick={clearMessages} style={{ float: 'right', background: 'none', border: 'none' }}>×</button>
+        <div className="alert error">
+          <span>{error}</span>
+          <button onClick={clearMessages} className="alert-close">×</button>
         </div>
       )}
       
       {success && (
-        <div className="alert alert-success fade-in">
-          {success}
-          <button onClick={clearMessages} style={{ float: 'right', background: 'none', border: 'none' }}>×</button>
+        <div className="alert success">
+          <span>{success}</span>
+          <button onClick={clearMessages} className="alert-close">×</button>
         </div>
       )}
 
-      {/* Dashboard Overview */}
-      <div className="dashboard-grid">
-        <div className="stat-card">
-          <div className="stat-number">👥 {trainees.length}</div>
-          <div className="stat-label">मेरे प्रशिक्षु</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">🫀 {trainees.filter(t => t.cpr_training === 1).length}</div>
-          <div className="stat-label">सीपीआर प्रशिक्षित</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">🩹 {trainees.filter(t => t.first_aid_kit_given === 1).length}</div>
-          <div className="stat-label">फर्स्ट एड किट दिए गए</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">⚕️ {trainees.filter(t => t.life_saving_skills === 1).length}</div>
-          <div className="stat-label">जीवन रक्षक कौशल</div>
-        </div>
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button
+          className={`tab-button ${activeTab === 'trainees' ? 'active' : ''}`}
+          onClick={() => setActiveTab('trainees')}
+        >
+          My Trainees
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'trainings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('trainings')}
+        >
+          Training Sessions
+        </button>
       </div>
 
-      {/* Trainees Management - Card View with Search/Filter */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <h2 className="card-title">👥 मेरे प्रशिक्षु</h2>
-          <button className="btn btn-success" onClick={() => setShowAddTrainee(true)}>
-            ➕ नया प्रशिक्षु पंजीकृत करें
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="नाम या मोबाइल से खोजें..."
-            value={search || ''}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
-          />
-          <select
-            value={filterDept || ''}
-            onChange={e => setFilterDept(e.target.value)}
-            style={{ minWidth: 140, padding: 10, borderRadius: 8, border: '1.5px solid #e0e7ff' }}
-          >
-            <option value="">सभी विभाग</option>
-            {[...new Set(trainees.map(t => t.department).filter(Boolean))].map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginBottom: 10, color: '#764ba2', fontWeight: 600 }}>
-          कुल परिणाम: {filteredTrainees.length}
-        </div>
-        {filteredTrainees.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#888' }}>
-            कोई प्रशिक्षु नहीं मिला।
+      {/* Tab Content */}
+      {activeTab === 'trainees' && (
+        <div className="tab-content">
+          <div className="data-header">
+            <h2>My Trainees</h2>
+            <button className="btn primary" onClick={() => setShowAddTrainee(true)}>
+              + Add Trainee
+            </button>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
-            {filteredTrainees.map(trainee => (
-              <div key={trainee.id} className="trainee-card" style={{ background: '#f8faff', borderRadius: 14, boxShadow: '0 2px 10px #e0e7ff55', padding: 18, cursor: 'pointer', border: '1.5px solid #e0e7ff', transition: 'box-shadow 0.2s' }} onClick={() => setDetailTrainee(trainee)}>
-                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#4b2997', marginBottom: 6 }}>{trainee.name}</div>
-                <div style={{ color: '#555', fontSize: '0.98rem', marginBottom: 2 }}>डिपार्टमेंट: <b>{trainee.department || 'N/A'}</b></div>
-                {trainee.designation && <div style={{ color: '#555', fontSize: '0.98rem' }}>पद: <b>{trainee.designation}</b></div>}
-              </div>
-            ))}
+          
+          <div className="data-controls">
+            <div className="search-controls">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search trainees..."
+                value={searchTrainee}
+                onChange={(e) => setSearchTrainee(e.target.value)}
+              />
+            </div>
+            <div className="filter-controls">
+              <select
+                className="filter-select"
+                value={filterTraineeDept}
+                onChange={(e) => setFilterTraineeDept(e.target.value)}
+              >
+                <option value="">All Departments</option>
+                {[...new Set(trainees.map(t => t.department).filter(Boolean))].map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+              <select
+                className="filter-select"
+                value={filterTraineeBlock}
+                onChange={(e) => setFilterTraineeBlock(e.target.value)}
+              >
+                <option value="">All Blocks</option>
+                {blocks.map(block => (
+                  <option key={block} value={block}>{block}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="data-summary">
+            Showing {filteredTrainees.length} of {trainees.length} trainees
+          </div>
+
+          {filteredTrainees.length === 0 ? (
+            <div className="empty-state">
+              <h3>No trainees found</h3>
+              <p>Try adjusting your search criteria or add a new trainee.</p>
+            </div>
+          ) : (
+            <div className="data-grid">
+              {filteredTrainees.map(trainee => (
+                <div key={trainee.id} className="data-card" onClick={() => setDetailTrainee(trainee)}>
+                  <div className="data-card-title">{trainee.name}</div>
+                  <div className="data-card-content">
+                    <p><strong>Department:</strong> {trainee.department}</p>
+                    {trainee.designation && <p><strong>Position:</strong> {trainee.designation}</p>}
+                    <p><strong>Location:</strong> {trainee.address || trainee.location}, {trainee.block}</p>
+                    <p><strong>Mobile:</strong> {trainee.mobile_number}</p>
+                    <p><strong>Gender:</strong> {trainee.gender}, <strong>Age:</strong> {trainee.age}</p>
+                  </div>
+                  <div className="data-card-footer">
+                    <div className="training-badges">
+                      {trainee.cpr_training === 1 && <span className="badge success">CPR</span>}
+                      {trainee.first_aid_kit_given === 1 && <span className="badge warning">First Aid</span>}
+                      {trainee.life_saving_skills === 1 && <span className="badge info">Life Skills</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'trainings' && (
+        <div className="tab-content">
+          <div className="data-header">
+            <h2>Training Sessions</h2>
+          </div>
+          
+          {trainings.length === 0 ? (
+            <div className="empty-state">
+              <h3>No training sessions found</h3>
+              <p>Training sessions you conduct will appear here.</p>
+            </div>
+          ) : (
+            <div className="data-grid">
+              {trainings.map(training => (
+                <div key={training.id} className="data-card">
+                  <div className="data-card-title">{training.title || training.training_topic}</div>
+                  <div className="data-card-content">
+                    <p><strong>Date:</strong> {new Date(training.training_date).toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> {training.training_time}</p>
+                    <p><strong>Duration:</strong> {training.duration_hours} hours</p>
+                    <p><strong>Location:</strong> {training.address}, {training.block}</p>
+                    {training.description && (
+                      <p><strong>Description:</strong> {training.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Trainee Detail Modal */}
       {detailTrainee && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-container">
             <div className="modal-header">
-              <h3 className="modal-title">{detailTrainee.name} - विवरण</h3>
-              <button className="close-btn" onClick={() => setDetailTrainee(null)}>×</button>
+              <h3 className="modal-title">{detailTrainee.name} - Trainee Details</h3>
+              <button className="modal-close" onClick={() => setDetailTrainee(null)}>×</button>
             </div>
-            <div style={{ marginBottom: 18 }}>
-              <div><b>नाम:</b> {detailTrainee.name}</div>
-              <div><b>मोबाइल:</b> {detailTrainee.mobile_number}</div>
-              <div><b>डिपार्टमेंट:</b> {detailTrainee.department}</div>
-              <div><b>पद:</b> {detailTrainee.designation || 'N/A'}</div>
-              <div><b>स्थान:</b> {detailTrainee.location}</div>
-              <div><b>प्रशिक्षण तिथि:</b> {detailTrainee.training_date}</div>
-              <div><b>सीपीआर प्रशिक्षण:</b> {detailTrainee.cpr_training ? 'हाँ' : 'नहीं'}</div>
-              <div><b>फर्स्ट एड किट:</b> {detailTrainee.first_aid_kit_given ? 'हाँ' : 'नहीं'}</div>
-              <div><b>जीवन रक्षक कौशल:</b> {detailTrainee.life_saving_skills ? 'हाँ' : 'नहीं'}</div>
+            <div className="modal-body">
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <strong>Name:</strong> {detailTrainee.name}
+                </div>
+                <div className="detail-item">
+                  <strong>Mobile:</strong> {detailTrainee.mobile_number}
+                </div>
+                <div className="detail-item">
+                  <strong>Gender:</strong> {detailTrainee.gender || 'Not specified'}
+                </div>
+                <div className="detail-item">
+                  <strong>Age:</strong> {detailTrainee.age || 'Not specified'}
+                </div>
+                <div className="detail-item">
+                  <strong>Department:</strong> {detailTrainee.department}
+                </div>
+                <div className="detail-item">
+                  <strong>Position:</strong> {detailTrainee.designation || 'Not specified'}
+                </div>
+                <div className="detail-item">
+                  <strong>Address:</strong> {detailTrainee.address || detailTrainee.location}
+                </div>
+                <div className="detail-item">
+                  <strong>Block:</strong> {detailTrainee.block || 'Not specified'}
+                </div>
+                <div className="detail-item">
+                  <strong>Training Date:</strong> {detailTrainee.training_date}
+                </div>
+              </div>
+              <div className="training-status-section">
+                <h4>Training Status</h4>
+                <div className="status-grid">
+                  <span className={`status-badge ${detailTrainee.cpr_training ? 'success' : 'gray'}`}>
+                    CPR Training {detailTrainee.cpr_training ? '✓' : '✗'}
+                  </span>
+                  <span className={`status-badge ${detailTrainee.first_aid_kit_given ? 'success' : 'gray'}`}>
+                    First Aid Kit {detailTrainee.first_aid_kit_given ? '✓' : '✗'}
+                  </span>
+                  <span className={`status-badge ${detailTrainee.life_saving_skills ? 'success' : 'gray'}`}>
+                    Life Saving Skills {detailTrainee.life_saving_skills ? '✓' : '✗'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="action-buttons">
-              <button className="btn btn-primary" onClick={() => { setShowEditTrainee(true); setEditingTrainee(detailTrainee); setDetailTrainee(null); }}>संपादित करें</button>
-              <button className="btn btn-danger" onClick={() => { handleDeleteTrainee(detailTrainee.id); setDetailTrainee(null); }}>हटाएँ</button>
+            <div className="modal-footer">
+              <button className="btn primary" onClick={() => { handleEditTrainee(detailTrainee); setDetailTrainee(null); }}>
+                Edit Trainee
+              </button>
+              <button className="btn danger" onClick={() => { handleDeleteTrainee(detailTrainee.id); setDetailTrainee(null); }}>
+                Delete Trainee
+              </button>
             </div>
           </div>
         </div>
@@ -298,148 +417,168 @@ const ProfessionalDashboard = ({ user }) => {
       {/* Add Trainee Modal */}
       {showAddTrainee && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-container large">
             <div className="modal-header">
-              <h3 className="modal-title">Register New Trainee</h3>
-              <button className="close-btn" onClick={closeModal}>×</button>
+              <h3 className="modal-title">Add New Trainee</h3>
+              <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleAddTrainee}>
-              <div className="form-group">
-                <label className="form-label">Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.name}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    name: e.target.value
-                  })}
-                  required
-                  placeholder="Enter trainee's full name"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Mobile Number</label>
-                <input
-                  type="tel"
-                  className="form-input"
-                  value={traineeForm.mobile_number}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    mobile_number: e.target.value
-                  })}
-                  placeholder="Enter 10-digit mobile number"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Department *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.department}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    department: e.target.value
-                  })}
-                  required
-                  placeholder=""
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Designation</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.designation}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    designation: e.target.value
-                  })}
-                  placeholder="e.g., Nurse, Ward Boy, etc."
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Location *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.location}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    location: e.target.value
-                  })}
-                  required
-                  placeholder="e.g., Block A, Ward 5, etc."
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Training Date *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={traineeForm.training_date}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    training_date: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Training Completed</label>
-                <div className="checkbox-group">
-                  <div className="checkbox-item">
+              <div className="modal-body">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
                     <input
-                      type="checkbox"
-                      id="add_cpr_training"
-                      checked={traineeForm.cpr_training}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        cpr_training: e.target.checked
-                      })}
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.name}
+                      onChange={(e) => setTraineeForm({...traineeForm, name: e.target.value})}
+                      required
+                      placeholder="Enter full name"
                     />
-                    <label htmlFor="add_cpr_training">CPR Training Completed</label>
                   </div>
                   
-                  <div className="checkbox-item">
+                  <div className="form-group">
+                    <label className="form-label">Mobile Number</label>
                     <input
-                      type="checkbox"
-                      id="add_first_aid_kit_given"
-                      checked={traineeForm.first_aid_kit_given}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        first_aid_kit_given: e.target.checked
-                      })}
+                      type="tel"
+                      className="form-input"
+                      value={traineeForm.mobile_number}
+                      onChange={(e) => setTraineeForm({...traineeForm, mobile_number: e.target.value})}
+                      placeholder="10-digit mobile number"
                     />
-                    <label htmlFor="add_first_aid_kit_given">First Aid Kit Given</label>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Gender</label>
+                    <select
+                      className="form-select"
+                      value={traineeForm.gender}
+                      onChange={(e) => setTraineeForm({...traineeForm, gender: e.target.value})}
+                    >
+                      <option value="">Select Gender</option>
+                      {genderOptions.map(gender => (
+                        <option key={gender} value={gender}>{gender}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Age</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={traineeForm.age}
+                      onChange={(e) => setTraineeForm({...traineeForm, age: e.target.value})}
+                      min="1"
+                      max="100"
+                      placeholder="Enter age"
+                    />
                   </div>
                   
-                  <div className="checkbox-item">
+                  <div className="form-group">
+                    <label className="form-label">Department *</label>
                     <input
-                      type="checkbox"
-                      id="add_life_saving_skills"
-                      checked={traineeForm.life_saving_skills}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        life_saving_skills: e.target.checked
-                      })}
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.department}
+                      onChange={(e) => setTraineeForm({...traineeForm, department: e.target.value})}
+                      required
+                      placeholder="e.g., Emergency, Surgery, etc."
                     />
-                    <label htmlFor="add_life_saving_skills">Life Saving Skills Training</label>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Designation</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.designation}
+                      onChange={(e) => setTraineeForm({...traineeForm, designation: e.target.value})}
+                      placeholder="e.g., Nurse, Ward Boy, etc."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address *</label>
+                    <textarea
+                      className="form-textarea"
+                      value={traineeForm.address}
+                      onChange={(e) => setTraineeForm({...traineeForm, address: e.target.value})}
+                      required
+                      placeholder="Enter complete address"
+                      rows="2"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Block *</label>
+                    <select
+                      className="form-select"
+                      value={traineeForm.block}
+                      onChange={(e) => setTraineeForm({...traineeForm, block: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Block</option>
+                      {blocks.map(block => (
+                        <option key={block} value={block}>{block}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={traineeForm.training_date}
+                      onChange={(e) => setTraineeForm({...traineeForm, training_date: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Training Completed</label>
+                  <div className="checkbox-grid">
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="add_cpr_training"
+                        checked={traineeForm.cpr_training}
+                        onChange={(e) => setTraineeForm({...traineeForm, cpr_training: e.target.checked})}
+                      />
+                      <label htmlFor="add_cpr_training">CPR Training</label>
+                    </div>
+                    
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="add_first_aid_kit_given"
+                        checked={traineeForm.first_aid_kit_given}
+                        onChange={(e) => setTraineeForm({...traineeForm, first_aid_kit_given: e.target.checked})}
+                      />
+                      <label htmlFor="add_first_aid_kit_given">First Aid Kit Given</label>
+                    </div>
+                    
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="add_life_saving_skills"
+                        checked={traineeForm.life_saving_skills}
+                        onChange={(e) => setTraineeForm({...traineeForm, life_saving_skills: e.target.checked})}
+                      />
+                      <label htmlFor="add_life_saving_skills">Life Saving Skills</label>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="action-buttons">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>
+              <div className="modal-footer">
+                <button type="button" className="btn secondary" onClick={closeModal}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-success">
-                  Register Trainee
+                <button type="submit" className="btn primary">
+                  Add Trainee
                 </button>
               </div>
             </form>
@@ -450,145 +589,161 @@ const ProfessionalDashboard = ({ user }) => {
       {/* Edit Trainee Modal */}
       {showEditTrainee && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-container large">
             <div className="modal-header">
               <h3 className="modal-title">Edit Trainee</h3>
-              <button className="close-btn" onClick={closeModal}>×</button>
+              <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleUpdateTrainee}>
-              <div className="form-group">
-                <label className="form-label">Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.name}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    name: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Mobile Number</label>
-                <input
-                  type="tel"
-                  className="form-input"
-                  value={traineeForm.mobile_number}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    mobile_number: e.target.value
-                  })}
-                  placeholder="Enter 10-digit mobile number"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Department *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.department}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    department: e.target.value
-                  })}
-                  required
-                  placeholder=""
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Designation</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.designation}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    designation: e.target.value
-                  })}
-                  placeholder="e.g., Nurse, Ward Boy, etc."
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Location *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={traineeForm.location}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    location: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Training Date *</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={traineeForm.training_date}
-                  onChange={(e) => setTraineeForm({
-                    ...traineeForm,
-                    training_date: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Training Status</label>
-                <div className="checkbox-group">
-                  <div className="checkbox-item">
+              <div className="modal-body">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
                     <input
-                      type="checkbox"
-                      id="edit_cpr_training"
-                      checked={traineeForm.cpr_training}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        cpr_training: e.target.checked
-                      })}
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.name}
+                      onChange={(e) => setTraineeForm({...traineeForm, name: e.target.value})}
+                      required
                     />
-                    <label htmlFor="edit_cpr_training">CPR Training Completed</label>
                   </div>
                   
-                  <div className="checkbox-item">
+                  <div className="form-group">
+                    <label className="form-label">Mobile Number</label>
                     <input
-                      type="checkbox"
-                      id="edit_first_aid_kit_given"
-                      checked={traineeForm.first_aid_kit_given}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        first_aid_kit_given: e.target.checked
-                      })}
+                      type="tel"
+                      className="form-input"
+                      value={traineeForm.mobile_number}
+                      onChange={(e) => setTraineeForm({...traineeForm, mobile_number: e.target.value})}
                     />
-                    <label htmlFor="edit_first_aid_kit_given">First Aid Kit Given</label>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Gender</label>
+                    <select
+                      className="form-select"
+                      value={traineeForm.gender}
+                      onChange={(e) => setTraineeForm({...traineeForm, gender: e.target.value})}
+                    >
+                      <option value="">Select Gender</option>
+                      {genderOptions.map(gender => (
+                        <option key={gender} value={gender}>{gender}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Age</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={traineeForm.age}
+                      onChange={(e) => setTraineeForm({...traineeForm, age: e.target.value})}
+                      min="1"
+                      max="100"
+                    />
                   </div>
                   
-                  <div className="checkbox-item">
+                  <div className="form-group">
+                    <label className="form-label">Department *</label>
                     <input
-                      type="checkbox"
-                      id="edit_life_saving_skills"
-                      checked={traineeForm.life_saving_skills}
-                      onChange={(e) => setTraineeForm({
-                        ...traineeForm,
-                        life_saving_skills: e.target.checked
-                      })}
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.department}
+                      onChange={(e) => setTraineeForm({...traineeForm, department: e.target.value})}
+                      required
                     />
-                    <label htmlFor="edit_life_saving_skills">Life Saving Skills Training</label>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Designation</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={traineeForm.designation}
+                      onChange={(e) => setTraineeForm({...traineeForm, designation: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address *</label>
+                    <textarea
+                      className="form-textarea"
+                      value={traineeForm.address}
+                      onChange={(e) => setTraineeForm({...traineeForm, address: e.target.value})}
+                      required
+                      rows="2"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Block *</label>
+                    <select
+                      className="form-select"
+                      value={traineeForm.block}
+                      onChange={(e) => setTraineeForm({...traineeForm, block: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Block</option>
+                      {blocks.map(block => (
+                        <option key={block} value={block}>{block}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={traineeForm.training_date}
+                      onChange={(e) => setTraineeForm({...traineeForm, training_date: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Training Status</label>
+                  <div className="checkbox-grid">
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="edit_cpr_training"
+                        checked={traineeForm.cpr_training}
+                        onChange={(e) => setTraineeForm({...traineeForm, cpr_training: e.target.checked})}
+                      />
+                      <label htmlFor="edit_cpr_training">CPR Training</label>
+                    </div>
+                    
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="edit_first_aid_kit_given"
+                        checked={traineeForm.first_aid_kit_given}
+                        onChange={(e) => setTraineeForm({...traineeForm, first_aid_kit_given: e.target.checked})}
+                      />
+                      <label htmlFor="edit_first_aid_kit_given">First Aid Kit Given</label>
+                    </div>
+                    
+                    <div className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="edit_life_saving_skills"
+                        checked={traineeForm.life_saving_skills}
+                        onChange={(e) => setTraineeForm({...traineeForm, life_saving_skills: e.target.checked})}
+                      />
+                      <label htmlFor="edit_life_saving_skills">Life Saving Skills</label>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="action-buttons">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>
+              <div className="modal-footer">
+                <button type="button" className="btn secondary" onClick={closeModal}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-success">
+                <button type="submit" className="btn primary">
                   Update Trainee
                 </button>
               </div>

@@ -1,50 +1,135 @@
-/* Force trainee card text to black for readability */
-.trainee-card, .trainee-card * {
-  color: #111 !important;
+/* Import centralized theme */
+@import './styles/theme.css';
+@import './styles/modern.css';
+
+/* Legacy compatibility overrides */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
 }
-/* --- Professional Dashboard Trainees Table Column Widths --- */
-.table.trainees-table th:nth-child(1), .table.trainees-table td:nth-child(1) { width: 15%; min-width: 110px; max-width: 180px; } /* Name */
-.table.trainees-table th:nth-child(2), .table.trainees-table td:nth-child(2) { width: 12%; min-width: 100px; max-width: 130px; } /* Mobile */
-.table.trainees-table th:nth-child(3), .table.trainees-table td:nth-child(3) { width: 12%; min-width: 90px; max-width: 120px; } /* Department */
-.table.trainees-table th:nth-child(4), .table.trainees-table td:nth-child(4) { width: 12%; min-width: 90px; max-width: 120px; } /* Location */
-.table.trainees-table th:nth-child(5), .table.trainees-table td:nth-child(5) { width: 13%; min-width: 100px; max-width: 130px; } /* Training Date */
-.table.trainees-table th:nth-child(6), .table.trainees-table td:nth-child(6),
-.table.trainees-table th:nth-child(7), .table.trainees-table td:nth-child(7),
-.table.trainees-table th:nth-child(8), .table.trainees-table td:nth-child(8) { width: 7%; min-width: 55px; max-width: 70px; text-align: center; } /* CPR, First Aid, Life Saving */
-.table.trainees-table th:nth-child(9), .table.trainees-table td:nth-child(9) { width: 18%; min-width: 120px; max-width: 160px; } /* Actions */
-/* --- FORCE ID COLUMN TO BE TINY, OVERRIDE ALL --- */
-.table th.id-col, .table td.id-col {
-  width: 1px !important;
-  min-width: 1px !important;
-  max-width: 1px !important;
-  padding: 0 !important;
-  font-size: 0.7rem !important;
-  font-family: monospace !important;
-  text-align: center !important;
-  overflow: hidden !important;
-  white-space: nowrap !important;
-  border-right: none !important;
+
+.dashboard-grid .stat-card {
+  background: white;
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  text-align: center;
 }
-/* Make table container scrollable if needed */
+
+.trainee-card,
+.professional-card {
+  background: white;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.trainee-card:hover,
+.professional-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-300);
+}
+
+.trainee-card *,
+.professional-card * {
+  color: var(--gray-700) !important;
+}
+
+.trainee-card .text-primary,
+.professional-card .text-primary {
+  color: var(--primary-600) !important;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Table styles for legacy support */
 .table-container {
   overflow-x: auto;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
 }
 
-/* Force table to not stretch unnecessarily */
 .table {
-  width: auto !important;
-  min-width: unset !important;
-  max-width: 100% !important;
-  table-layout: fixed !important;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
 }
 
-/* Restrict all columns except name and ID for compactness */
-.table th:not(.id-col):not(:nth-child(2)),
-.table td:not(.id-col):not(:nth-child(2)) {
-  max-width: 90px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table th {
+  background-color: var(--gray-50);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
+}
+
+.table tbody tr:hover {
+  background-color: var(--gray-50);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius);
+}
+
+.badge-success {
+  background-color: var(--success-100);
+  color: var(--success-700);
+}
+
+.badge-error {
+  background-color: var(--error-100);
+  color: var(--error-700);
+}
+
+.badge-warning {
+  background-color: var(--warning-100);
+  color: var(--warning-700);
+}
+
+.badge-secondary {
+  background-color: var(--gray-100);
+  color: var(--gray-700);
+}
+
+/* Remove old purple/ugly styles */
+.gradient-text {
+  color: var(--primary-600);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Override any remaining purple colors */
+[style*="color: #764ba2"],
+[style*="color: #4b2997"] {
+  color: var(--primary-600) !important;
+}
+
+[style*="background: #f8faff"] {
+  background: white !important;
+}
+
+[style*="border: 1.5px solid #e0e7ff"] {
+  border: 1px solid var(--gray-300) !important;
+}
+
+[style*="box-shadow: 0 2px 10px #e0e7ff55"] {
+  box-shadow: var(--shadow-sm) !important;
 }
 
 

@@ -64,6 +64,8 @@ def login():
                     'name': user['name'],
                     'username': user['username'],
                     'mobile_number': user['mobile_number'],
+                    'gender': user['gender'],
+                    'age': user['age'],
                     'role': user['role'],
                     'designation': user.get('designation'),
                     'department': user.get('department'),
@@ -87,13 +89,15 @@ def register_professional():
     name = data.get('name')
     username = data.get('username')
     mobile_number = data.get('mobile_number')
+    gender = data.get('gender')
+    age = data.get('age')
     designation = data.get('designation', '')
     department = data.get('department', '')
     specialization = data.get('specialization', '')
     experience_years = data.get('experience_years', 0)
     
-    if not all([name, username, mobile_number]):
-        return jsonify({'error': 'Name, username and mobile number are required'}), 400
+    if not all([name, username, mobile_number, gender, age]):
+        return jsonify({'error': 'Name, username, mobile number, gender and age are required'}), 400
     
     connection = get_db_connection()
     if not connection:
@@ -109,10 +113,10 @@ def register_professional():
             return jsonify({'error': 'Username already exists'}), 400
         
         # Insert new professional (password will be mobile number)
-        insert_query = """INSERT INTO users (name, username, password, mobile_number, role, designation, 
+        insert_query = """INSERT INTO users (name, username, password, mobile_number, gender, age, role, designation, 
                          department, specialization, experience_years) 
-                         VALUES (%s, %s, %s, %s, 'professional', %s, %s, %s, %s)"""
-        cursor.execute(insert_query, (name, username, mobile_number, mobile_number, designation, 
+                         VALUES (%s, %s, %s, %s, %s, %s, 'professional', %s, %s, %s, %s)"""
+        cursor.execute(insert_query, (name, username, mobile_number, mobile_number, gender, age, designation, 
                                     department, specialization, experience_years))
         connection.commit()
         
@@ -130,16 +134,19 @@ def register_trainee():
     data = request.get_json()
     name = data.get('name')
     mobile_number = data.get('mobile_number')
+    gender = data.get('gender')
+    age = data.get('age')
     department = data.get('department')
     designation = data.get('designation', '')
-    location = data.get('location')
+    address = data.get('address')
+    block = data.get('block')
     training_date = data.get('training_date')
     cpr_training = data.get('cpr_training', False)
     first_aid_kit_given = data.get('first_aid_kit_given', False)
     life_saving_skills = data.get('life_saving_skills', False)
     registered_by = data.get('registered_by')
 
-    if not all([name, department, location, training_date, registered_by]):
+    if not all([name, gender, age, department, address, block, training_date, registered_by]):
         return jsonify({'error': 'All required fields must be provided'}), 400
 
     connection = get_db_connection()
@@ -149,11 +156,11 @@ def register_trainee():
     try:
         cursor = connection.cursor()
         insert_query = """
-            INSERT INTO trainees (name, mobile_number, department, designation, location, training_date, 
+            INSERT INTO trainees (name, mobile_number, gender, age, department, designation, address, block, training_date, 
                                 cpr_training, first_aid_kit_given, life_saving_skills, registered_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(insert_query, (name, mobile_number, department, designation, location, training_date,
+        cursor.execute(insert_query, (name, mobile_number, gender, age, department, designation, address, block, training_date,
                                     cpr_training, first_aid_kit_given, life_saving_skills, registered_by))
         connection.commit()
 
@@ -228,7 +235,7 @@ def get_professionals():
         cursor = connection.cursor(dictionary=True)
         # Fetch all relevant fields for professionals
         query = """
-            SELECT id, name, username, mobile_number, designation, department, specialization, experience_years, created_at
+            SELECT id, name, username, mobile_number, gender, age, designation, department, specialization, experience_years, created_at
             FROM users
             WHERE role = 'professional'
             ORDER BY created_at DESC
@@ -252,15 +259,18 @@ def edit_trainee(trainee_id):
     data = request.get_json()
     name = data.get('name')
     mobile_number = data.get('mobile_number')
+    gender = data.get('gender')
+    age = data.get('age')
     department = data.get('department')
     designation = data.get('designation', '')
-    location = data.get('location')
+    address = data.get('address')
+    block = data.get('block')
     training_date = data.get('training_date')
     cpr_training = data.get('cpr_training', False)
     first_aid_kit_given = data.get('first_aid_kit_given', False)
     life_saving_skills = data.get('life_saving_skills', False)
 
-    if not all([name, department, location, training_date]):
+    if not all([name, gender, age, department, address, block, training_date]):
         return jsonify({'error': 'All required fields must be provided'}), 400
 
     connection = get_db_connection()
@@ -271,11 +281,11 @@ def edit_trainee(trainee_id):
         cursor = connection.cursor()
         update_query = """
             UPDATE trainees 
-            SET name = %s, mobile_number = %s, department = %s, designation = %s, location = %s, training_date = %s,
+            SET name = %s, mobile_number = %s, gender = %s, age = %s, department = %s, designation = %s, address = %s, block = %s, training_date = %s,
                 cpr_training = %s, first_aid_kit_given = %s, life_saving_skills = %s
             WHERE id = %s
         """
-        cursor.execute(update_query, (name, mobile_number, department, designation, location, training_date,
+        cursor.execute(update_query, (name, mobile_number, gender, age, department, designation, address, block, training_date,
                                     cpr_training, first_aid_kit_given, life_saving_skills, trainee_id))
         connection.commit()
 
@@ -379,6 +389,8 @@ def edit_professional(professional_id):
             name = %s, 
             username = %s, 
             mobile_number = %s,
+            gender = %s,
+            age = %s,
             designation = %s,
             department = %s,
             specialization = %s,
@@ -390,6 +402,8 @@ def edit_professional(professional_id):
             data.get('name'),
             data.get('username'),
             data.get('mobile_number'),
+            data.get('gender'),
+            data.get('age'),
             data.get('designation'),
             data.get('department'),
             data.get('specialization'),
@@ -402,6 +416,171 @@ def edit_professional(professional_id):
             return jsonify({'success': True, 'message': 'Professional updated successfully'})
         else:
             return jsonify({'error': 'Professional not found or could not be updated'}), 404
+        
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+# Training endpoints
+@app.route('/api/create_training', methods=['POST'])
+def create_training():
+    """Create new training session"""
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description', '')
+    training_topic = data.get('training_topic')
+    address = data.get('address')
+    block = data.get('block')
+    training_date = data.get('training_date')
+    training_time = data.get('training_time')
+    duration_hours = data.get('duration_hours', 1.0)
+    max_trainees = data.get('max_trainees', 50)
+    conducted_by = data.get('conducted_by')
+
+    if not all([title, training_topic, address, block, training_date, training_time, conducted_by]):
+        return jsonify({'error': 'All required fields must be provided'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor()
+        insert_query = """
+            INSERT INTO trainings (title, description, training_topic, address, block, training_date, 
+                                 training_time, duration_hours, max_trainees, conducted_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_query, (title, description, training_topic, address, block, training_date,
+                                    training_time, duration_hours, max_trainees, conducted_by))
+        connection.commit()
+
+        return jsonify({'success': True, 'message': 'Training created successfully'})
+
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/get_trainings', methods=['GET'])
+def get_trainings():
+    """Get trainings (filtered by user role)"""
+    user_id = request.args.get('user_id')
+    role = request.args.get('role')
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+
+        if role == 'admin':
+            # Admin sees all trainings
+            query = """
+                SELECT t.*, u.name as conducted_by_name 
+                FROM trainings t 
+                JOIN users u ON t.conducted_by = u.id
+                ORDER BY t.training_date DESC, t.training_time DESC
+            """
+            cursor.execute(query)
+        else:
+            # Professionals see only their own trainings
+            query = """
+                SELECT t.*, u.name as conducted_by_name 
+                FROM trainings t 
+                JOIN users u ON t.conducted_by = u.id
+                WHERE t.conducted_by = %s
+                ORDER BY t.training_date DESC, t.training_time DESC
+            """
+            cursor.execute(query, (user_id,))
+
+        trainings = cursor.fetchall()
+
+        # Convert date and time objects to strings
+        for training in trainings:
+            if training['training_date']:
+                training['training_date'] = training['training_date'].strftime('%Y-%m-%d')
+            if training['training_time']:
+                training['training_time'] = str(training['training_time'])
+            if training['created_at']:
+                training['created_at'] = training['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            if training['updated_at']:
+                training['updated_at'] = training['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+
+        return jsonify({'success': True, 'trainings': trainings})
+
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/edit_training/<int:training_id>', methods=['PUT'])
+def edit_training(training_id):
+    """Edit training details"""
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description', '')
+    training_topic = data.get('training_topic')
+    address = data.get('address')
+    block = data.get('block')
+    training_date = data.get('training_date')
+    training_time = data.get('training_time')
+    duration_hours = data.get('duration_hours', 1.0)
+    max_trainees = data.get('max_trainees', 50)
+    status = data.get('status', 'Planned')
+
+    if not all([title, training_topic, address, block, training_date, training_time]):
+        return jsonify({'error': 'All required fields must be provided'}), 400
+
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor()
+        update_query = """
+            UPDATE trainings 
+            SET title = %s, description = %s, training_topic = %s, address = %s, block = %s, 
+                training_date = %s, training_time = %s, duration_hours = %s, max_trainees = %s, status = %s
+            WHERE id = %s
+        """
+        cursor.execute(update_query, (title, description, training_topic, address, block, training_date,
+                                    training_time, duration_hours, max_trainees, status, training_id))
+        connection.commit()
+
+        if cursor.rowcount > 0:
+            return jsonify({'success': True, 'message': 'Training updated successfully'})
+        else:
+            return jsonify({'error': 'Training not found'}), 404
+
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/api/delete_training/<int:training_id>', methods=['DELETE'])
+def delete_training(training_id):
+    """Delete training"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    try:
+        cursor = connection.cursor()
+        delete_query = "DELETE FROM trainings WHERE id = %s"
+        cursor.execute(delete_query, (training_id,))
+        connection.commit()
+        
+        if cursor.rowcount > 0:
+            return jsonify({'success': True, 'message': 'Training deleted successfully'})
+        else:
+            return jsonify({'error': 'Training not found'}), 404
         
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
