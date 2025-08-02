@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { authAPI } from '../api';
 import Alert from '../components/Alert';
+import { useLanguage } from '../contexts/LanguageContext';
 import '../App.css';
 
 const Login = ({ onLogin }) => {
+  const { t, language, toggleLanguage } = useLanguage();
   const [activeRole, setActiveRole] = useState('admin');
   const [formData, setFormData] = useState({
     username: '',
@@ -42,6 +44,30 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-page">
+      {/* Language Toggle Button */}
+      <button
+        onClick={toggleLanguage}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          padding: '8px 16px',
+          backgroundColor: 'var(--primary-500)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: '500',
+          zIndex: 1000,
+          transition: 'all 0.2s ease'
+        }}
+        onMouseOver={(e) => e.target.style.backgroundColor = 'var(--primary-600)'}
+        onMouseOut={(e) => e.target.style.backgroundColor = 'var(--primary-500)'}
+      >
+        {language === 'hi' ? 'English' : 'हिंदी'}
+      </button>
+
       <div className="login-container">
         {/* Left Side - Info Section */}
         <div className="login-info">
@@ -58,10 +84,10 @@ const Login = ({ onLogin }) => {
               </div>
             </div>
             <h1 className="brand-title">
-              SURAKSHA
+              {t('brand_name')}
             </h1>
             <p className="brand-subtitle">
-              Advanced Medical Training Management System
+              {t('brand_subtitle')}
             </p>
 
           </div>
@@ -82,14 +108,14 @@ const Login = ({ onLogin }) => {
               marginBottom: 'var(--space-2)',
               margin: '0 0 var(--space-2) 0'
             }}>
-              Welcome Back
+              {t('welcome_back')}
             </h2>
             <p style={{
               color: 'var(--gray-600)',
               fontSize: 'var(--font-size-base)',
               margin: 0
             }}>
-              Sign in to your account to continue
+              {t('sign_in_to_continue')}
             </p>
           </div>
           
@@ -101,7 +127,7 @@ const Login = ({ onLogin }) => {
               marginBottom: 'var(--space-3)',
               margin: '0 0 var(--space-3) 0'
             }}>
-              Select Your Role
+              {t('select_role')}
             </h3>
             <div style={{
               display: 'grid',
@@ -138,13 +164,13 @@ const Login = ({ onLogin }) => {
                     fontWeight: 'var(--font-weight-medium)',
                     color: activeRole === 'admin' ? 'var(--primary-700)' : 'var(--gray-700)'
                   }}>
-                    Administrator
+                    {t('administrator')}
                   </div>
                   <div style={{
                     fontSize: 'var(--font-size-xs)',
                     color: 'var(--gray-500)'
                   }}>
-                    System Management
+                    {t('system_management')}
                   </div>
                 </div>
               </button>
@@ -179,13 +205,13 @@ const Login = ({ onLogin }) => {
                     fontWeight: 'var(--font-weight-medium)',
                     color: activeRole === 'professional' ? 'var(--primary-700)' : 'var(--gray-700)'
                   }}>
-                    Medical Professional
+                    {t('medical_professional')}
                   </div>
                   <div style={{
                     fontSize: 'var(--font-size-xs)',
                     color: 'var(--gray-500)'
                   }}>
-                    Training Management
+                    {t('training_management')}
                   </div>
                 </div>
               </button>
@@ -203,7 +229,7 @@ const Login = ({ onLogin }) => {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Username</label>
+              <label className="form-label">{t('username')}</label>
               <input
                 type="text"
                 name="username"
@@ -211,13 +237,13 @@ const Login = ({ onLogin }) => {
                 value={formData.username}
                 onChange={handleInputChange}
                 required
-                placeholder="Enter your username"
+                placeholder={t('enter_username')}
                 style={{ fontSize: 'var(--font-size-base)' }}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label className="form-label">{t('password')}</label>
               <input
                 type="password"
                 name="password"
@@ -225,7 +251,7 @@ const Login = ({ onLogin }) => {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                placeholder="Enter your password"
+                placeholder={t('enter_password')}
                 style={{ fontSize: 'var(--font-size-base)' }}
               />
             </div>
@@ -239,7 +265,7 @@ const Login = ({ onLogin }) => {
                 marginTop: 'var(--space-2)'
               }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('signing_in') : t('sign_in')}
             </button>
           </form>
 

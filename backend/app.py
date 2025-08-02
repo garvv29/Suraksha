@@ -227,18 +227,26 @@ def get_trainees():
 
 @app.route('/api/get_professionals', methods=['GET'])
 def get_professionals():
-    """Get all medical professionals (admin only)"""
+    """Get all medical professionals with training and trainee counts (admin only)"""
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
     try:
         cursor = connection.cursor(dictionary=True)
-        # Fetch all relevant fields for professionals
+        # Fetch professionals with training and trainee counts
         query = """
-            SELECT id, name, username, mobile_number, gender, age, designation, department, specialization, experience_years, created_at
-            FROM users
-            WHERE role = 'professional'
-            ORDER BY created_at DESC
+            SELECT 
+                u.id, u.name, u.username, u.mobile_number, u.gender, u.age, 
+                u.designation, u.department, u.specialization, u.experience_years, u.created_at,
+                COUNT(DISTINCT t.id) as total_trainings,
+                COUNT(DISTINCT tr.id) as total_trainees_trained
+            FROM users u
+            LEFT JOIN trainings t ON u.id = t.conducted_by
+            LEFT JOIN trainees tr ON u.id = tr.registered_by
+            WHERE u.role = 'professional'
+            GROUP BY u.id, u.name, u.username, u.mobile_number, u.gender, u.age, 
+                     u.designation, u.department, u.specialization, u.experience_years, u.created_at
+            ORDER BY u.created_at DESC
         """
         cursor.execute(query)
         professionals = cursor.fetchall()
@@ -246,6 +254,9 @@ def get_professionals():
         for prof in professionals:
             if prof['created_at']:
                 prof['created_at'] = prof['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            # Ensure counts are integers
+            prof['total_trainings'] = int(prof['total_trainings']) if prof['total_trainings'] else 0
+            prof['total_trainees_trained'] = int(prof['total_trainees_trained']) if prof['total_trainees_trained'] else 0
         return jsonify({'success': True, 'professionals': professionals})
     except mysql.connector.Error as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500

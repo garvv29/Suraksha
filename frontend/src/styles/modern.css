@@ -500,13 +500,12 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: var(--space-4);
-  backdrop-filter: blur(4px);
   animation: modalFadeIn 0.3s ease-out;
 }
 
@@ -533,12 +532,12 @@ body {
 .modal-content {
   background: white;
   border-radius: var(--radius-xl);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
   animation: modalSlideIn 0.3s ease-out;
-  border: 1px solid var(--gray-200);
+  border: 2px solid var(--gray-100);
 }
 
 .modal-content.max-w-md {
@@ -559,18 +558,18 @@ body {
 
 .modal-header {
   padding: var(--space-6);
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 2px solid var(--gray-100);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
+  background: white;
+  color: var(--gray-900);
 }
 
 .modal-title {
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  color: white;
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-900);
   margin: 0;
 }
 
@@ -578,6 +577,7 @@ body {
   padding: var(--space-6);
   max-height: calc(90vh - 200px);
   overflow-y: auto;
+  background: white;
 }
 
 .modal-body-content > * + * {
@@ -587,32 +587,33 @@ body {
 .modal-footer {
   padding: var(--space-4) var(--space-6);
   background: var(--gray-50);
-  border-top: 1px solid var(--gray-200);
+  border-top: 2px solid var(--gray-100);
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
 }
 
 .close-btn {
-  background: none;
-  border: none;
+  background: var(--gray-100);
+  border: 2px solid var(--gray-200);
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--gray-600);
   cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
   transition: all 0.2s ease-in-out;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .close-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+  color: var(--gray-800);
+  background: var(--gray-200);
+  border-color: var(--gray-300);
+  transform: scale(1.05);
 }
 
 /* Page Layout */
@@ -801,22 +802,22 @@ body {
 }
 
 .logo-circle {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.15);
+  width: 120px;
+  height: 120px;
+  background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.8);
 }
 
 .logo-image {
-  width: 50px;
-  height: 50px;
-  filter: brightness(0) invert(1);
+  width: 80px;
+  height: 80px;
+  filter: none;
 }
 
 .brand-title {

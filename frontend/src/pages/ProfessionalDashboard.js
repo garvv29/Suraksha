@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { traineeAPI, trainingAPI } from '../api';
+import { useLanguage } from '../contexts/LanguageContext';
 import '../App.css';
 
 const ProfessionalDashboard = ({ user }) => {
+  const { t } = useLanguage();
   const [trainees, setTrainees] = useState([]);
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,14 +65,14 @@ const ProfessionalDashboard = ({ user }) => {
     try {
       const [traineesResponse, trainingsResponse] = await Promise.all([
         traineeAPI.getAll(user.id, user.role),
-        trainingAPI.getAll()
+        trainingAPI.getAll(user.id, user.role)
       ]);
       
       if (traineesResponse.data.success) {
         setTrainees(traineesResponse.data.trainees);
       }
       if (trainingsResponse.data.success) {
-        setTrainings(trainingsResponse.data.trainings.filter(t => t.conducted_by === user.id));
+        setTrainings(trainingsResponse.data.trainings);
       }
     } catch (error) {
       setError('Failed to fetch data');
@@ -348,7 +350,7 @@ const ProfessionalDashboard = ({ user }) => {
               <input
                 type="text"
                 className="search-input"
-                placeholder="Search trainees..."
+                placeholder={t('search_trainees_placeholder')}
                 value={searchTrainee}
                 onChange={(e) => setSearchTrainee(e.target.value)}
               />
@@ -534,32 +536,32 @@ const ProfessionalDashboard = ({ user }) => {
         <div className="modal-overlay">
           <div className="modal-container large">
             <div className="modal-header">
-              <h3 className="modal-title">Add New Trainee</h3>
+              <h3 className="modal-title">{t('add_new_trainee')}</h3>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleAddTrainee}>
               <div className="modal-body">
                 <div className="form-grid">
                   <div className="form-group">
-                    <label className="form-label">Full Name *</label>
+                    <label className="form-label">{t('name')} *</label>
                     <input
                       type="text"
                       className="form-input"
                       value={traineeForm.name}
                       onChange={(e) => setTraineeForm({...traineeForm, name: e.target.value})}
                       required
-                      placeholder="Enter full name"
+                      placeholder={t('enter_full_name')}
                     />
                   </div>
                   
                   <div className="form-group">
-                    <label className="form-label">Mobile Number</label>
+                    <label className="form-label">{t('mobile_number')}</label>
                     <input
                       type="tel"
                       className="form-input"
                       value={traineeForm.mobile_number}
                       onChange={(e) => setTraineeForm({...traineeForm, mobile_number: e.target.value})}
-                      placeholder="10-digit mobile number"
+                      placeholder={t('enter_mobile_number')}
                     />
                   </div>
 
@@ -872,7 +874,7 @@ const ProfessionalDashboard = ({ user }) => {
         <div className="modal-overlay">
           <div className="modal-container large">
             <div className="modal-header">
-              <h3 className="modal-title">Add New Training</h3>
+              <h3 className="modal-title">{t('add_new_training')}</h3>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             <form onSubmit={handleAddTraining}>

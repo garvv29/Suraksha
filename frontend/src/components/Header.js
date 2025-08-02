@@ -1,20 +1,30 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Header = ({ user, onLogout }) => {
+  const { language, toggleLanguage, t } = useLanguage();
+
   return (
     <header className="header">
       <div className="header-content">
         <div className="logo">
           <img src="/suraksha-logo.svg" alt="Suraksha Logo" className="header-logo" />
-          <span>सुरक्षा</span>
+          <span>{t('brand_name')}</span>
         </div>
         <div className="user-info">
-          <span>स्वागत है, <strong>{user.name}</strong></span>
+          <button 
+            onClick={toggleLanguage}
+            className="language-toggle"
+            title={`Switch to ${language === 'hi' ? 'English' : 'हिंदी'}`}
+          >
+            {language === 'hi' ? 'EN' : 'हिं'}
+          </button>
+          <span>{t('welcome')}, <strong>{user.name}</strong></span>
           <span className="role-badge">
-            {user.role === 'admin' ? '👑 व्यवस्थापक' : '👨‍⚕️ मेडिकल प्रोफेशनल'}
+            {user.role === 'admin' ? `👑 ${t('admin')}` : `👨‍⚕️ ${t('medical_professional')}`}
           </span>
           <button className="logout-btn" onClick={onLogout}>
-            🚪 लॉगआउट
+            🚪 {t('logout')}
           </button>
         </div>
       </div>

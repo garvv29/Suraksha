@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { professionalAPI, traineeAPI, trainingAPI } from '../api';
+import { useLanguage } from '../contexts/LanguageContext';
 import '../App.css';
 
 const AdminDashboard = ({ user }) => {
+  const { t } = useLanguage();
   const [professionals, setProfessionals] = useState([]);
   const [trainees, setTrainees] = useState([]);
   const [trainings, setTrainings] = useState([]);
@@ -37,6 +39,10 @@ const AdminDashboard = ({ user }) => {
   const [filterProfessionalDept, setFilterProfessionalDept] = useState('');
   const [searchTraining, setSearchTraining] = useState('');
   const [filterTrainingBlock, setFilterTrainingBlock] = useState('');
+  
+  // Sorting states
+  const [professionalSortBy, setProfessionalSortBy] = useState('name');
+  const [professionalSortOrder, setProfessionalSortOrder] = useState('asc');
 
   // Form data
   const [professionalForm, setProfessionalForm] = useState({
@@ -451,16 +457,16 @@ const AdminDashboard = ({ user }) => {
         {activeTab === 'professionals' && (
           <div className="card-content">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="card-title">Medical Professionals</h2>
+              <h2 className="card-title">{t('professionals')}</h2>
               <button className="btn btn-primary" onClick={() => setShowAddProfessional(true)}>
-                Add New Professional
+                {t('add_new_professional')}
               </button>
             </div>
             
             <div className="search-filter-bar">
               <input
                 type="text"
-                placeholder="Search by name, username, mobile, designation, department..."
+                placeholder={t('search_by_name')}
                 value={searchProfessional}
                 onChange={e => setSearchProfessional(e.target.value)}
                 className="form-input search-input"
@@ -470,15 +476,32 @@ const AdminDashboard = ({ user }) => {
                 onChange={e => setFilterProfessionalDept(e.target.value)}
                 className="form-select filter-select"
               >
-                <option value="">All Departments</option>
+                <option value="">{t('all_departments')}</option>
                 {[...new Set(professionals.map(p => p.department).filter(Boolean))].map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
+              <select
+                value={professionalSortBy}
+                onChange={e => setProfessionalSortBy(e.target.value)}
+                className="form-select filter-select"
+              >
+                <option value="name">{t('sort_by_name')}</option>
+                <option value="total_trainings">{t('sort_by_trainings')}</option>
+                <option value="total_trainees_trained">{t('sort_by_students')}</option>
+                <option value="experience_years">{t('sort_by_experience')}</option>
+              </select>
+              <button
+                onClick={() => setProfessionalSortOrder(professionalSortOrder === 'asc' ? 'desc' : 'asc')}
+                className="btn btn-secondary"
+                style={{ padding: '8px 12px', minWidth: 'auto' }}
+              >
+                {professionalSortOrder === 'asc' ? '↑' : '↓'}
+              </button>
             </div>
             
             <div className="mb-4 text-gray-600 font-medium">
-              Total Results: {
+              {t('total_results')}: {
                 professionals.filter(p => {
                   const q = searchProfessional.toLowerCase();
                   return (
@@ -495,44 +518,88 @@ const AdminDashboard = ({ user }) => {
               }
             </div>
             
-            {professionals.filter(p => {
-              const q = searchProfessional.toLowerCase();
-              return (
-                (!filterProfessionalDept || p.department === filterProfessionalDept) &&
-                (
-                  p.name?.toLowerCase().includes(q) ||
-                  p.username?.toLowerCase().includes(q) ||
-                  p.mobile_number?.toLowerCase().includes(q) ||
-                  (p.designation || '').toLowerCase().includes(q) ||
-                  (p.department || '').toLowerCase().includes(q)
-                )
-              );
-            }).length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-title">No professionals found</div>
-                <div className="empty-state-description">Try adjusting your search criteria</div>
-              </div>
-            ) : (
-              <div className="data-grid">
-                {professionals.filter(p => {
-                  const q = searchProfessional.toLowerCase();
-                  return (
-                    (!filterProfessionalDept || p.department === filterProfessionalDept) &&
-                    (
-                      p.name?.toLowerCase().includes(q) ||
-                      p.username?.toLowerCase().includes(q) ||
-                      p.mobile_number?.toLowerCase().includes(q) ||
-                      (p.designation || '').toLowerCase().includes(q) ||
-                      (p.department || '').toLowerCase().includes(q)
-                    )
-                  );
-                }).map(prof => (
+            {(() => {
+              // Filter professionals
+              const filteredProfessionals = professionals.filter(p => {
+                const q = searchProfessional.toLowerCase();
+                return (
+                  (!filterProfessionalDept || p.department === filterProfessionalDept) &&
+                  (
+                    p.name?.toLowerCase().includes(q) ||
+                    p.username?.toLowerCase().includes(q) ||
+                    p.mobile_number?.toLowerCase().includes(q) ||
+                    (p.designation || '').toLowerCase().includes(q) ||
+                    (p.department || '').toLowerCase().includes(q)
+                  )
+                );
+              });
+
+              // Sort professionals
+              const sortedProfessionals = [...filteredProfessionals].sort((a, b) => {
+                let aVal, bVal;
+                switch (professionalSortBy) {
+                  case 'total_trainings':
+                    aVal = a.total_trainings || 0;
+                    bVal = b.total_trainings || 0;
+                    break;
+                  case 'total_trainees_trained':
+                    aVal = a.total_trainees_trained || 0;
+                    bVal = b.total_trainees_trained || 0;
+                    break;
+                  case 'experience_years':
+                    aVal = a.experience_years || 0;
+                    bVal = b.experience_years || 0;
+                    break;
+                  default: // name
+                    aVal = (a.name || '').toLowerCase();
+                    bVal = (b.name || '').toLowerCase();
+                }
+
+                if (professionalSortOrder === 'asc') {
+                  return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                  return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+              });
+
+              return sortedProfessionals.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-title">{t('no_professionals_found')}</div>
+                  <div className="empty-state-description">{t('adjust_search_criteria')}</div>
+                </div>
+              ) : (
+                <div className="data-grid">
+                  {sortedProfessionals.map(prof => (
                   <div key={prof.id} className="data-card" onClick={() => setDetailProfessional(prof)}>
                     <div className="data-card-title">{prof.name}</div>
                     <div className="data-card-content">
-                      <div className="mb-2"><strong>Designation:</strong> {prof.designation || 'N/A'}</div>
-                      <div className="mb-2"><strong>Department:</strong> {prof.department || 'N/A'}</div>
-                      <div className="mb-2"><strong>Experience:</strong> {prof.experience_years || 0} years</div>
+                      <div className="mb-2"><strong>{t('designation')}:</strong> {prof.designation || 'N/A'}</div>
+                      <div className="mb-2"><strong>{t('department')}:</strong> {prof.department || 'N/A'}</div>
+                      <div className="mb-2"><strong>{t('experience')}:</strong> {prof.experience_years || 0} years</div>
+                      <div className="mb-2">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                          <span style={{ 
+                            background: 'var(--success-100)', 
+                            color: 'var(--success-700)', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px', 
+                            fontSize: '12px', 
+                            fontWeight: '500' 
+                          }}>
+                            📚 {prof.total_trainings || 0} {t('trainings')}
+                          </span>
+                          <span style={{ 
+                            background: 'var(--primary-100)', 
+                            color: 'var(--primary-700)', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px', 
+                            fontSize: '12px', 
+                            fontWeight: '500' 
+                          }}>
+                            👥 {prof.total_trainees_trained || 0} {t('students')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <div className="data-card-meta">
                       <span>{prof.gender}, {prof.age} years</span>
@@ -541,19 +608,20 @@ const AdminDashboard = ({ user }) => {
                   </div>
                 ))}
               </div>
-            )}
+            );
+          })()}
           </div>
         )}
 
         {/* All Trainees Tab */}
         {activeTab === 'trainees' && (
           <div className="card-content">
-            <h2 className="card-title mb-6">All Trainees</h2>
+            <h2 className="card-title mb-6">{t('trainees')}</h2>
             
             <div className="search-filter-bar">
               <input
                 type="text"
-                placeholder="Search by name, mobile, designation, department, address..."
+                placeholder={t('search_trainees')}
                 value={searchTrainee}
                 onChange={e => setSearchTrainee(e.target.value)}
                 className="form-input search-input"
@@ -563,7 +631,7 @@ const AdminDashboard = ({ user }) => {
                 onChange={e => setFilterTraineeDept(e.target.value)}
                 className="form-select filter-select"
               >
-                <option value="">All Departments</option>
+                <option value="">{t('all_departments')}</option>
                 {[...new Set(trainees.map(t => t.department).filter(Boolean))].map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
@@ -573,7 +641,7 @@ const AdminDashboard = ({ user }) => {
                 onChange={e => setFilterTraineeBlock(e.target.value)}
                 className="form-select filter-select"
               >
-                <option value="">All Blocks</option>
+                <option value="">{t('all_blocks')}</option>
                 {blockOptions.map(block => (
                   <option key={block} value={block}>{block}</option>
                 ))}
@@ -581,7 +649,7 @@ const AdminDashboard = ({ user }) => {
             </div>
             
             <div className="mb-4 text-gray-600 font-medium">
-              Total Results: {
+              {t('total_results')}: {
                 trainees.filter(t => {
                   const q = searchTrainee.toLowerCase();
                   return (
@@ -655,13 +723,13 @@ const AdminDashboard = ({ user }) => {
         {activeTab === 'trainings' && (
           <div className="card-content">
             <div className="mb-6">
-              <h2 className="card-title">Training Sessions</h2>
+              <h2 className="card-title">{t('trainings')}</h2>
             </div>
             
             <div className="search-filter-bar">
               <input
                 type="text"
-                placeholder="Search by title, topic, address..."
+                placeholder={t('search_trainings')}
                 value={searchTraining}
                 onChange={e => setSearchTraining(e.target.value)}
                 className="form-input search-input"
@@ -679,7 +747,7 @@ const AdminDashboard = ({ user }) => {
             </div>
             
             <div className="mb-4 text-gray-600 font-medium">
-              Total Results: {
+              {t('total_results')}: {
                 trainings.filter(t => {
                   const q = searchTraining.toLowerCase();
                   return (
@@ -725,8 +793,9 @@ const AdminDashboard = ({ user }) => {
                   <div key={training.id} className="data-card" onClick={() => setDetailTraining(training)}>
                     <div className="data-card-title">{training.title}</div>
                     <div className="data-card-content">
-                      <div className="mb-2"><strong>Topic:</strong> {training.training_topic}</div>
-                      <div className="mb-2"><strong>Location:</strong> {training.address}, {training.block}</div>
+                      <div className="mb-2"><strong>{t('topic')}:</strong> {training.training_topic}</div>
+                      <div className="mb-2"><strong>{t('location')}:</strong> {training.address}, {training.block}</div>
+                      <div className="mb-2"><strong>{t('conducted_by')}:</strong> {training.conducted_by_name || 'N/A'}</div>
                     </div>
                     <div className="data-card-meta">
                       <span>{training.training_date} at {training.training_time}</span>
@@ -894,7 +963,7 @@ const AdminDashboard = ({ user }) => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3 className="modal-title">Add New Medical Professional</h3>
+              <h3 className="modal-title">{t('add_new_medical_professional')}</h3>
               <button className="close-btn" onClick={closeModal}>×</button>
             </div>
             <div className="modal-body">

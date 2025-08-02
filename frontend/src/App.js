@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Components
 import Login from './pages/Login';
@@ -41,58 +42,60 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="App">
-        {user && <Header user={user} onLogout={handleLogout} />}
-        
-        <Routes>
-          <Route 
-            path="/login" 
-            element={
-              user ? 
-                <Navigate to={user.role === 'admin' ? '/admin' : '/professional'} /> : 
-                <Login onLogin={handleLogin} />
-            } 
-          />
+    <LanguageProvider>
+      <Router>
+        <div className="App">
+          {user && <Header user={user} onLogout={handleLogout} />}
           
-          <Route 
-            path="/admin" 
-            element={
-              user && user.role === 'admin' ? 
-                <AdminDashboard user={user} /> : 
-                <Navigate to="/login" />
-            } 
-          />
-          
-          <Route 
-            path="/data" 
-            element={
-              user && user.role === 'admin' ? 
-                <DataViewer /> : 
-                <Navigate to="/login" />
-            } 
-          />
-          
-          <Route 
-            path="/professional" 
-            element={
-              user && user.role === 'professional' ? 
-                <ProfessionalDashboard user={user} /> : 
-                <Navigate to="/login" />
-            } 
-          />
-          
-          <Route 
-            path="/" 
-            element={
-              user ? 
-                <Navigate to={user.role === 'admin' ? '/admin' : '/professional'} /> : 
-                <Navigate to="/login" />
-            } 
-          />
-        </Routes>
-      </div>
-    </Router>
+          <Routes>
+            <Route 
+              path="/login" 
+              element={
+                user ? 
+                  <Navigate to={user.role === 'admin' ? '/admin' : '/professional'} /> : 
+                  <Login onLogin={handleLogin} />
+              } 
+            />
+            
+            <Route 
+              path="/admin" 
+              element={
+                user && user.role === 'admin' ? 
+                  <AdminDashboard user={user} /> : 
+                  <Navigate to="/login" />
+              } 
+            />
+            
+            <Route 
+              path="/data" 
+              element={
+                user && user.role === 'admin' ? 
+                  <DataViewer /> : 
+                  <Navigate to="/login" />
+              } 
+            />
+            
+            <Route 
+              path="/professional" 
+              element={
+                user && user.role === 'professional' ? 
+                  <ProfessionalDashboard user={user} /> : 
+                  <Navigate to="/login" />
+              } 
+            />
+            
+            <Route 
+              path="/" 
+              element={
+                user ? 
+                  <Navigate to={user.role === 'admin' ? '/admin' : '/professional'} /> : 
+                  <Navigate to="/login" />
+              } 
+            />
+          </Routes>
+        </div>
+      </Router>
+    </LanguageProvider>
   );
 }
 
