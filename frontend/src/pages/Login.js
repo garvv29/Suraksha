@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authAPI } from '../api';
+import Alert from '../components/Alert';
 import '../App.css';
 
 const Login = ({ onLogin }) => {
@@ -40,48 +41,13 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%)',
-      padding: 'var(--space-6)'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: 'var(--radius-3xl)',
-        boxShadow: 'var(--shadow-xl)',
-        overflow: 'hidden',
-        width: '100%',
-        maxWidth: '1000px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        minHeight: '600px'
-      }}>
+    <div className="login-page">
+      <div className="login-container">
         {/* Left Side - Info Section */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%)',
-          padding: 'var(--space-12)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          color: 'white',
-          textAlign: 'center',
-          position: 'relative'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-            opacity: 0.3
-          }}></div>
+        <div className="login-info">
+          <div className="login-bg-pattern"></div>
           
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div className="login-brand">
             <div className="logo-container">
               <div className="logo-circle">
                 <img 
@@ -227,9 +193,12 @@ const Login = ({ onLogin }) => {
           </div>
 
           {error && (
-            <div className="alert alert-error fade-in" style={{ marginBottom: 'var(--space-4)' }}>
-              {error}
-            </div>
+            <Alert 
+              type="error" 
+              message={error} 
+              dismissible={true}
+              onClose={() => setError('')}
+            />
           )}
 
           <form onSubmit={handleSubmit}>

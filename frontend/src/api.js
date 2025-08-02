@@ -39,4 +39,8 @@ export const healthAPI = {
   check: () => api.get('/health'),
 };
 
+export const dataAPI = {
+  getAllData: () => api.get('/data'),
+};
+
 export default api;

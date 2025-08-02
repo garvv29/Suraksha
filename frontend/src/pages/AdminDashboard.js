@@ -432,6 +432,19 @@ const AdminDashboard = ({ user }) => {
           >
             Training Sessions
           </button>
+          <a
+            href="/data"
+            className="nav-tab"
+            style={{ 
+              textDecoration: 'none', 
+              color: 'inherit',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              borderColor: '#2563eb'
+            }}
+          >
+            📊 Database Viewer
+          </a>
         </div>
 
         {/* Medical Professionals Tab */}

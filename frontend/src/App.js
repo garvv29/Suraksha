@@ -6,6 +6,7 @@ import './App.css';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
+import DataViewer from './pages/DataViewer';
 import Header from './components/Header';
 
 function App() {
@@ -59,6 +60,15 @@ function App() {
             element={
               user && user.role === 'admin' ? 
                 <AdminDashboard user={user} /> : 
+                <Navigate to="/login" />
+            } 
+          />
+          
+          <Route 
+            path="/data" 
+            element={
+              user && user.role === 'admin' ? 
+                <DataViewer /> : 
                 <Navigate to="/login" />
             } 
           />

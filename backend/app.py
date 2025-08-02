@@ -471,6 +471,13 @@ def get_trainings():
     user_id = request.args.get('user_id')
     role = request.args.get('role')
 
+    # Add validation for required parameters
+    if not role:
+        return jsonify({'error': 'Role parameter is required'}), 400
+    
+    if role != 'admin' and not user_id:
+        return jsonify({'error': 'User ID is required for non-admin users'}), 400
+
     connection = get_db_connection()
     if not connection:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -610,6 +617,66 @@ def health_check():
             'status': 'ERROR', 
             'message': f'Health check failed: {str(e)}'
         }), 500
+
+@app.route('/api/data', methods=['GET'])
+def get_all_data():
+    """Get all data from all tables for viewing table structures"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 500
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get data from all tables
+        data = {}
+        
+        # Users table
+        cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
+        users = cursor.fetchall()
+        # Convert datetime objects to strings for users
+        for user in users:
+            if user['created_at']:
+                user['created_at'] = user['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        data['users'] = users
+        
+        # Trainees table
+        cursor.execute("SELECT * FROM trainees ORDER BY created_at DESC")
+        trainees = cursor.fetchall()
+        # Convert datetime and date objects to strings for trainees
+        for trainee in trainees:
+            if trainee['training_date']:
+                trainee['training_date'] = trainee['training_date'].strftime('%Y-%m-%d')
+            if trainee['created_at']:
+                trainee['created_at'] = trainee['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        data['trainees'] = trainees
+        
+        # Trainings table
+        cursor.execute("SELECT * FROM trainings ORDER BY created_at DESC")
+        trainings = cursor.fetchall()
+        # Convert datetime, date and time objects to strings for trainings
+        for training in trainings:
+            if training['training_date']:
+                training['training_date'] = training['training_date'].strftime('%Y-%m-%d')
+            if training['training_time']:
+                training['training_time'] = str(training['training_time'])
+            if training['created_at']:
+                training['created_at'] = training['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            if training['updated_at']:
+                training['updated_at'] = training['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+        data['trainings'] = trainings
+        
+        return jsonify({
+            'success': True, 
+            'data': data,
+            'message': 'All table data retrieved successfully'
+        })
+
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    finally:
+        cursor.close()
+        connection.close()
 
 # Error handlers for production
 @app.errorhandler(404)
