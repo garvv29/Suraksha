@@ -15,6 +15,9 @@ const ProfessionalDashboard = ({ user }) => {
   const [showEditTrainee, setShowEditTrainee] = useState(false);
   const [editingTrainee, setEditingTrainee] = useState(null);
   const [detailTrainee, setDetailTrainee] = useState(null);
+  const [showAddTraining, setShowAddTraining] = useState(false);
+  const [showEditTraining, setShowEditTraining] = useState(false);
+  const [editingTraining, setEditingTraining] = useState(null);
 
   // Search/filter states  
   const [searchTrainee, setSearchTrainee] = useState('');
@@ -35,6 +38,17 @@ const ProfessionalDashboard = ({ user }) => {
     cpr_training: false,
     first_aid_kit_given: false,
     life_saving_skills: false,
+  });
+
+  const [trainingForm, setTrainingForm] = useState({
+    title: '',
+    description: '',
+    training_topic: '',
+    address: '',
+    block: '',
+    training_date: '',
+    training_time: '',
+    duration_hours: '',
   });
 
   const blocks = ['Raipur', 'Birgaon', 'Abhanpur', 'Arang', 'Dhariswa', 'Tilda'];
@@ -149,11 +163,92 @@ const ProfessionalDashboard = ({ user }) => {
     });
   };
 
+  // Training Functions
+  const handleAddTraining = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await trainingAPI.create({
+        ...trainingForm,
+        conducted_by: user.id
+      });
+      if (response.data.success) {
+        setSuccess('Training created successfully!');
+        setShowAddTraining(false);
+        resetTrainingForm();
+        fetchData();
+      }
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to create training');
+    }
+  };
+
+  const handleEditTraining = (training) => {
+    setEditingTraining(training);
+    setTrainingForm({
+      title: training.title || '',
+      description: training.description || '',
+      training_topic: training.training_topic || '',
+      address: training.address || '',
+      block: training.block || '',
+      training_date: training.training_date || '',
+      training_time: training.training_time || '',
+      duration_hours: training.duration_hours || '',
+    });
+    setShowEditTraining(true);
+  };
+
+  const handleUpdateTraining = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await trainingAPI.update(editingTraining.id, trainingForm);
+      if (response.data.success) {
+        setSuccess('Training updated successfully!');
+        setShowEditTraining(false);
+        setEditingTraining(null);
+        resetTrainingForm();
+        fetchData();
+      }
+    } catch (error) {
+      setError(error.response?.data?.error || 'Failed to update training');
+    }
+  };
+
+  const handleDeleteTraining = async (trainingId) => {
+    if (window.confirm('Are you sure you want to delete this training?')) {
+      try {
+        const response = await trainingAPI.delete(trainingId);
+        if (response.data.success) {
+          setSuccess('Training deleted successfully!');
+          fetchData();
+        }
+      } catch (error) {
+        setError(error.response?.data?.error || 'Failed to delete training');
+      }
+    }
+  };
+
+  const resetTrainingForm = () => {
+    setTrainingForm({
+      title: '',
+      description: '',
+      training_topic: '',
+      address: '',
+      block: '',
+      training_date: '',
+      training_time: '',
+      duration_hours: '',
+    });
+  };
+
   const closeModal = () => {
     setShowAddTrainee(false);
     setShowEditTrainee(false);
     setEditingTrainee(null);
+    setShowAddTraining(false);
+    setShowEditTraining(false);
+    setEditingTraining(null);
     resetTraineeForm();
+    resetTrainingForm();
   };
 
   const clearMessages = () => {
@@ -321,12 +416,18 @@ const ProfessionalDashboard = ({ user }) => {
         <div className="tab-content">
           <div className="data-header">
             <h2>Training Sessions</h2>
+            <button className="btn primary" onClick={() => setShowAddTraining(true)}>
+              + Add Training
+            </button>
           </div>
           
           {trainings.length === 0 ? (
             <div className="empty-state">
               <h3>No training sessions found</h3>
               <p>Training sessions you conduct will appear here.</p>
+              <button className="btn primary" onClick={() => setShowAddTraining(true)}>
+                Create Your First Training
+              </button>
             </div>
           ) : (
             <div className="data-grid">
@@ -341,6 +442,20 @@ const ProfessionalDashboard = ({ user }) => {
                     {training.description && (
                       <p><strong>Description:</strong> {training.description}</p>
                     )}
+                  </div>
+                  <div className="data-card-footer">
+                    <button 
+                      className="btn secondary" 
+                      onClick={(e) => { e.stopPropagation(); handleEditTraining(training); }}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="btn danger" 
+                      onClick={(e) => { e.stopPropagation(); handleDeleteTraining(training.id); }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
@@ -745,6 +860,249 @@ const ProfessionalDashboard = ({ user }) => {
                 </button>
                 <button type="submit" className="btn primary">
                   Update Trainee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Training Modal */}
+      {showAddTraining && (
+        <div className="modal-overlay">
+          <div className="modal-container large">
+            <div className="modal-header">
+              <h3 className="modal-title">Add New Training</h3>
+              <button className="modal-close" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleAddTraining}>
+              <div className="modal-body">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Training Title *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={trainingForm.title}
+                      onChange={(e) => setTrainingForm({...trainingForm, title: e.target.value})}
+                      required
+                      placeholder="Enter training title"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Topic *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={trainingForm.training_topic}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_topic: e.target.value})}
+                      required
+                      placeholder="e.g., CPR, First Aid, etc."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address *</label>
+                    <textarea
+                      className="form-textarea"
+                      value={trainingForm.address}
+                      onChange={(e) => setTrainingForm({...trainingForm, address: e.target.value})}
+                      required
+                      placeholder="Enter training venue address"
+                      rows="2"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Block *</label>
+                    <select
+                      className="form-select"
+                      value={trainingForm.block}
+                      onChange={(e) => setTrainingForm({...trainingForm, block: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Block</option>
+                      {blocks.map(block => (
+                        <option key={block} value={block}>{block}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={trainingForm.training_date}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_date: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Training Time *</label>
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={trainingForm.training_time}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_time: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Duration (Hours)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={trainingForm.duration_hours}
+                      onChange={(e) => setTrainingForm({...trainingForm, duration_hours: e.target.value})}
+                      step="0.5"
+                      min="0.5"
+                      max="24"
+                      placeholder="e.g., 2.5"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      className="form-textarea"
+                      value={trainingForm.description}
+                      onChange={(e) => setTrainingForm({...trainingForm, description: e.target.value})}
+                      placeholder="Enter training description (optional)"
+                      rows="3"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <button type="button" className="btn secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary">
+                  Add Training
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Training Modal */}
+      {showEditTraining && (
+        <div className="modal-overlay">
+          <div className="modal-container large">
+            <div className="modal-header">
+              <h3 className="modal-title">Edit Training</h3>
+              <button className="modal-close" onClick={closeModal}>×</button>
+            </div>
+            <form onSubmit={handleUpdateTraining}>
+              <div className="modal-body">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Training Title *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={trainingForm.title}
+                      onChange={(e) => setTrainingForm({...trainingForm, title: e.target.value})}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Topic *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={trainingForm.training_topic}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_topic: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address *</label>
+                    <textarea
+                      className="form-textarea"
+                      value={trainingForm.address}
+                      onChange={(e) => setTrainingForm({...trainingForm, address: e.target.value})}
+                      required
+                      rows="2"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Block *</label>
+                    <select
+                      className="form-select"
+                      value={trainingForm.block}
+                      onChange={(e) => setTrainingForm({...trainingForm, block: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Block</option>
+                      {blocks.map(block => (
+                        <option key={block} value={block}>{block}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Training Date *</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={trainingForm.training_date}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_date: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Training Time *</label>
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={trainingForm.training_time}
+                      onChange={(e) => setTrainingForm({...trainingForm, training_time: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Duration (Hours)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={trainingForm.duration_hours}
+                      onChange={(e) => setTrainingForm({...trainingForm, duration_hours: e.target.value})}
+                      step="0.5"
+                      min="0.5"
+                      max="24"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      className="form-textarea"
+                      value={trainingForm.description}
+                      onChange={(e) => setTrainingForm({...trainingForm, description: e.target.value})}
+                      rows="3"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <button type="button" className="btn secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary">
+                  Update Training
                 </button>
               </div>
             </form>
